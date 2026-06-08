@@ -23,7 +23,9 @@ export function drawPixelAsset(
 
       const color = asset.palette[key];
       if (!color) {
-        continue;
+        throw new Error(
+          `Unknown pixel glyph "${key}" at row ${rowIndex}, column ${columnIndex}`,
+        );
       }
 
       graphics.fillStyle(hexToNumber(color), 1);
@@ -45,9 +47,12 @@ export function drawTileScene(
   for (let rowIndex = 0; rowIndex < sceneMap.length; rowIndex += 1) {
     const row = sceneMap[rowIndex];
     for (let columnIndex = 0; columnIndex < row.length; columnIndex += 1) {
-      const asset = tiles[row[columnIndex]];
+      const tileChar = row[columnIndex];
+      const asset = tiles[tileChar];
       if (!asset) {
-        continue;
+        throw new Error(
+          `Unknown scene tile "${tileChar}" at row ${rowIndex}, column ${columnIndex}`,
+        );
       }
 
       drawPixelAsset(graphics, asset, x + columnIndex * tileSize, y + rowIndex * tileSize, scale);

@@ -8,9 +8,13 @@ if (!root) {
   throw new Error("Missing #game-root");
 }
 
+const canvasHost = document.createElement("div");
+canvasHost.id = "canvas-host";
+root.append(canvasHost);
+
 new Phaser.Game({
   type: Phaser.CANVAS,
-  parent: root,
+  parent: canvasHost,
   width: 640,
   height: 480,
   backgroundColor: "#172112",

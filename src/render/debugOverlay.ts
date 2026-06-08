@@ -3,11 +3,15 @@ import { AQUILLA_ART } from "../art/aquillaArt";
 
 export function renderDebugOverlay(state: GameState): void {
   let overlay = document.querySelector<HTMLPreElement>("#debug-state");
+  const mount = document.querySelector<HTMLDivElement>("#game-root") ?? document.body;
 
   if (!overlay) {
     overlay = document.createElement("pre");
     overlay.id = "debug-state";
-    document.body.append(overlay);
+  }
+
+  if (overlay.parentElement !== mount) {
+    mount.append(overlay);
   }
 
   overlay.textContent = [

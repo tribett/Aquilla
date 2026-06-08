@@ -1,4 +1,68 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
+
+interface Box {
+  bottom: number;
+  left: number;
+  right: number;
+  top: number;
+}
+
+interface Viewport {
+  height: number;
+  width: number;
+}
+
+function boxesIntersect(first: Box, second: Box): boolean {
+  return (
+    first.left < second.right &&
+    first.right > second.left &&
+    first.top < second.bottom &&
+    first.bottom > second.top
+  );
+}
+
+async function expectCanvasAndDebugSeparated(
+  page: Page,
+  viewport: Viewport,
+): Promise<void> {
+  await page.setViewportSize(viewport);
+  await page.goto("/");
+
+  const canvas = page.locator("canvas");
+  const debugState = page.locator("#debug-state");
+  await expect(canvas).toBeVisible();
+  await expect(debugState).toBeVisible();
+
+  const layout = await page.evaluate(() => {
+    const canvasElement = document.querySelector("canvas");
+    const debugElement = document.querySelector("#debug-state");
+
+    if (!canvasElement || !debugElement) {
+      throw new Error("Missing canvas or debug overlay");
+    }
+
+    const toBox = (rect: DOMRect): Box => ({
+      bottom: rect.bottom,
+      left: rect.left,
+      right: rect.right,
+      top: rect.top,
+    });
+
+    return {
+      canvas: toBox(canvasElement.getBoundingClientRect()),
+      debug: toBox(debugElement.getBoundingClientRect()),
+      documentWidth: document.documentElement.scrollWidth,
+      viewport: { height: window.innerHeight, width: window.innerWidth },
+    };
+  });
+
+  expect(boxesIntersect(layout.canvas, layout.debug)).toBe(false);
+  expect(layout.canvas.left).toBeGreaterThanOrEqual(0);
+  expect(layout.canvas.top).toBeGreaterThanOrEqual(0);
+  expect(layout.canvas.right).toBeLessThanOrEqual(layout.viewport.width);
+  expect(layout.canvas.bottom).toBeLessThanOrEqual(layout.viewport.height);
+  expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewport.width);
+}
 
 test("loads Aquilla and renders a nonblank game canvas", async ({ page }) => {
   const errors: string[] = [];
@@ -46,4 +110,12 @@ test("loads Aquilla and renders a nonblank game canvas", async ({ page }) => {
 
   expect(artBibleColors).toEqual({ hasTrueLight: true, hasFalseLight: true });
   expect(errors).toEqual([]);
+});
+
+test("keeps debug state outside the game canvas on desktop", async ({ page }) => {
+  await expectCanvasAndDebugSeparated(page, { width: 1280, height: 720 });
+});
+
+test("keeps debug state outside the game canvas on compact screens", async ({ page }) => {
+  await expectCanvasAndDebugSeparated(page, { width: 640, height: 480 });
 });
