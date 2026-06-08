@@ -7,7 +7,29 @@
     <title>Aquilla</title>
   </head>
   <body data-game="aquilla">
-    <div id="game-root" aria-label="Aquilla game canvas"></div>
+    <main class="page-shell" aria-labelledby="aquilla-title">
+      <section class="story-panel" aria-label="Aquilla prototype introduction">
+        <h1 id="aquilla-title">Aquilla</h1>
+        <div class="story-copy">
+          <p class="tagline">Gather. Guard. Restore.</p>
+          <p class="flavor">Mercy leads the lost home; grace is received, not earned.</p>
+        </div>
+      </section>
+      <section class="prototype-shell" aria-label="Playable prototype">
+        <aside class="controls-panel" aria-label="Controls">
+          <h2>Controls</h2>
+          <ul class="controls-list">
+            <li><span class="control-copy">Arrow keys</span><span>move Aquilla</span></li>
+            <li><span class="control-copy">H herd</span><span>guide sheep</span></li>
+            <li><span class="control-copy">W water</span><span>restore spring</span></li>
+            <li><span class="control-copy">D distract</span><span>draw guardian</span></li>
+            <li><span class="control-copy">G calm</span><span>lower hostility</span></li>
+            <li><span class="control-copy">R restore fold</span><span>bring the lost home</span></li>
+          </ul>
+        </aside>
+        <div id="game-root" aria-label="Aquilla game canvas"></div>
+      </section>
+    </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

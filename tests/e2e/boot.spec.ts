@@ -74,6 +74,14 @@ test("loads Aquilla and renders a nonblank game canvas", async ({ page }) => {
 
   const canvas = page.locator("canvas");
   await expect(canvas).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Aquilla" })).toBeVisible();
+  await expect(page.getByText("Gather. Guard. Restore.")).toBeVisible();
+  await expect(page.getByText("Arrow keys")).toBeVisible();
+  await expect(page.getByText("H herd")).toBeVisible();
+  await expect(page.getByText("W water")).toBeVisible();
+  await expect(page.getByText("D distract")).toBeVisible();
+  await expect(page.getByText("G calm")).toBeVisible();
+  await expect(page.getByText("R restore fold")).toBeVisible();
   await expect(page.locator("#debug-state")).toContainText("Aquilla");
   await expect(page.locator("#debug-state")).toContainText("Greenward");
   await expect(page.locator("#debug-state")).toContainText("Art Bible");
