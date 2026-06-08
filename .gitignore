@@ -1,2 +1,13 @@
 .superpowers/
 .playwright-mcp/
+node_modules/
+dist/
+test-results/
+playwright-report/
+*.tsbuildinfo
+playwright.config.d.ts
+playwright.config.js
+vite.config.d.ts
+vite.config.js
+vitest.config.d.ts
+vitest.config.js
