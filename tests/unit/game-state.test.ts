@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { AQUILLA_ART } from "../../src/art/aquillaArt";
 import { createInitialState } from "../../src/game/createInitialState";
+import { buildWorldMapFromScene } from "../../src/render/worldMap";
 
 describe("createInitialState", () => {
   it("starts Aquilla as a shepherd boy in Briarfold with staff and sheepdog", () => {
@@ -17,6 +19,15 @@ describe("createInitialState", () => {
       waterRestored: false,
       guardianCalmed: false,
       foldRestored: false,
+    });
+  });
+
+  it("places lost sheep on walkable art-map tiles", () => {
+    const state = createInitialState();
+    const worldMap = buildWorldMapFromScene(AQUILLA_ART.sceneMap);
+
+    state.sheep.forEach((sheep) => {
+      expect(worldMap.blockedTiles).not.toContainEqual(sheep.position);
     });
   });
 });

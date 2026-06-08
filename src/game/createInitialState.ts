@@ -21,7 +21,7 @@ export function createInitialState(): GameState {
     sheep: [
       { id: "sheep-1", name: "Lost Sheep 1", position: { x: 9, y: 4 }, gathered: false },
       { id: "sheep-2", name: "Lost Sheep 2", position: { x: 12, y: 7 }, gathered: false },
-      { id: "sheep-3", name: "Lost Sheep 3", position: { x: 7, y: 10 }, gathered: false },
+      { id: "sheep-3", name: "Lost Sheep 3", position: { x: 9, y: 10 }, gathered: false },
     ],
     inventory: ["shepherd-staff"],
     objectives: {
