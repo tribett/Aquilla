@@ -54,3 +54,11 @@ export interface WorldMap {
   height: number;
   blockedTiles: Vector2[];
 }
+
+export type InteractableKind = "bell" | "water-channel" | "shepherd-gate" | "stone";
+
+export interface Interactable {
+  id: string;
+  kind: InteractableKind;
+  active: boolean;
+}
