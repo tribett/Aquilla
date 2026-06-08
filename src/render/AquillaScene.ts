@@ -2,15 +2,29 @@ import Phaser from "phaser";
 import { AQUILLA_ART } from "../art/aquillaArt";
 import { drawPixelAsset, drawTileScene, hexToNumber } from "../art/pixelRenderer";
 import { createInitialState } from "../game/createInitialState";
-import type { GameState } from "../game/types";
+import { movePlayer } from "../game/movement";
+import type { Direction, GameState, WorldMap } from "../game/types";
 import { renderDebugOverlay } from "./debugOverlay";
 
 const PIXEL_SCALE = 2;
 const TILE_SIZE = 16 * PIXEL_SCALE;
+const SCENE_WIDTH = 20 * TILE_SIZE;
 const SCENE_HEIGHT = 13 * TILE_SIZE;
+const PROTOTYPE_MAP: WorldMap = {
+  width: 20,
+  height: 13,
+  blockedTiles: [],
+};
+const ARROW_DIRECTIONS: Partial<Record<string, Direction>> = {
+  ArrowDown: "down",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  ArrowUp: "up",
+};
 
 export class AquillaScene extends Phaser.Scene {
   private state: GameState = createInitialState();
+  private graphics?: Phaser.GameObjects.Graphics;
 
   constructor() {
     super("AquillaScene");
@@ -18,14 +32,38 @@ export class AquillaScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor(AQUILLA_ART.palette.grassBase);
-    this.drawWorld();
+    this.graphics = this.add.graphics();
+    this.redrawWorld();
+    this.registerKeyboardMovement();
     renderDebugOverlay(this.state);
   }
 
-  private drawWorld(): void {
-    const graphics = this.add.graphics();
+  private registerKeyboardMovement(): void {
+    this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
+      const direction = ARROW_DIRECTIONS[event.key];
+      if (!direction) return;
+
+      event.preventDefault();
+      this.move(direction);
+    });
+  }
+
+  private move(direction: Direction): void {
+    this.state = movePlayer(this.state, direction, PROTOTYPE_MAP);
+    this.redrawWorld();
+    renderDebugOverlay(this.state);
+  }
+
+  private redrawWorld(): void {
+    const graphics = this.graphics ?? this.add.graphics();
+    this.graphics = graphics;
+    graphics.clear();
+    this.drawWorld(graphics);
+  }
+
+  private drawWorld(graphics: Phaser.GameObjects.Graphics): void {
     graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.grassBase), 1);
-    graphics.fillRect(0, 0, 640, 480);
+    graphics.fillRect(0, 0, SCENE_WIDTH, 480);
 
     drawTileScene(graphics, AQUILLA_ART.sceneMap, AQUILLA_ART.tiles, 0, 0, PIXEL_SCALE);
 
