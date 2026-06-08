@@ -2,8 +2,12 @@ import Phaser from "phaser";
 import { AQUILLA_ART } from "../art/aquillaArt";
 import { drawPixelAsset, drawTileScene, hexToNumber } from "../art/pixelRenderer";
 import { createInitialState } from "../game/createInitialState";
+import { commandDog, herdNearestSheep } from "../game/dog";
+import { restoreFoldIfReady } from "../game/dungeon";
+import { resolveEncounter } from "../game/encounters";
 import { movePlayer } from "../game/movement";
-import type { Direction, GameState, WorldMap } from "../game/types";
+import { useStaffOnObject } from "../game/staff";
+import type { Direction, Encounter, GameState, Interactable, WorldMap } from "../game/types";
 import { renderDebugOverlay } from "./debugOverlay";
 
 const PIXEL_SCALE = 2;
@@ -24,6 +28,16 @@ const ARROW_DIRECTIONS: Partial<Record<string, Direction>> = {
 
 export class AquillaScene extends Phaser.Scene {
   private state: GameState = createInitialState();
+  private guardian: Encounter = {
+    id: "fold-guardian",
+    kind: "corrupted-guardian",
+    state: "hostile",
+  };
+  private waterChannel: Interactable = {
+    id: "dry-channel",
+    kind: "water-channel",
+    active: false,
+  };
   private graphics?: Phaser.GameObjects.Graphics;
 
   constructor() {
@@ -34,22 +48,64 @@ export class AquillaScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(AQUILLA_ART.palette.grassBase);
     this.graphics = this.add.graphics();
     this.redrawWorld();
-    this.registerKeyboardMovement();
+    this.registerKeyboardControls();
     renderDebugOverlay(this.state);
   }
 
-  private registerKeyboardMovement(): void {
+  private registerKeyboardControls(): void {
     this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
       const direction = ARROW_DIRECTIONS[event.key];
-      if (!direction) return;
+      if (direction) {
+        event.preventDefault();
+        this.move(direction);
+        return;
+      }
+
+      if (!this.handleActionKey(event.key)) return;
 
       event.preventDefault();
-      this.move(direction);
     });
+  }
+
+  private handleActionKey(key: string): boolean {
+    switch (key.toLowerCase()) {
+      case "d":
+        this.state = commandDog(this.state, "distract");
+        this.refreshScene();
+        return true;
+      case "g": {
+        const result = resolveEncounter(this.state, this.guardian, "staff-calm");
+        this.state = result.state;
+        this.guardian = result.encounter;
+        this.refreshScene();
+        return true;
+      }
+      case "h":
+        this.state = herdNearestSheep(commandDog(this.state, "herd"));
+        this.refreshScene();
+        return true;
+      case "r":
+        this.state = restoreFoldIfReady(this.state);
+        this.refreshScene();
+        return true;
+      case "w": {
+        const result = useStaffOnObject(this.state, this.waterChannel);
+        this.state = result.state;
+        this.waterChannel = result.object;
+        this.refreshScene();
+        return true;
+      }
+      default:
+        return false;
+    }
   }
 
   private move(direction: Direction): void {
     this.state = movePlayer(this.state, direction, PROTOTYPE_MAP);
+    this.refreshScene();
+  }
+
+  private refreshScene(): void {
     this.redrawWorld();
     renderDebugOverlay(this.state);
   }
