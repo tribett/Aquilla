@@ -27,3 +27,23 @@ body {
   place-items: center;
   background: #172112;
 }
+
+canvas {
+  width: min(100vw, 960px);
+  height: auto;
+  image-rendering: pixelated;
+}
+
+#debug-state {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  z-index: 10;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(248, 250, 252, 0.35);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.82);
+  color: #f8fafc;
+  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
