@@ -183,6 +183,28 @@ body {
   white-space: pre-wrap;
 }
 
+@media (max-width: 1020px) {
+  .prototype-shell {
+    grid-template-columns: minmax(156px, 184px) minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  #game-root {
+    grid-template-columns: 1fr;
+    align-content: center;
+    justify-items: center;
+    gap: 8px;
+  }
+
+  #canvas-host {
+    width: min(100%, 560px, calc((100dvh - 260px) * 1.333333));
+  }
+
+  #debug-state {
+    width: min(100%, 560px);
+  }
+}
+
 @media (max-width: 760px) {
   .page-shell {
     gap: 8px;
@@ -208,9 +230,17 @@ body {
   }
 
   .prototype-shell {
-    grid-template-columns: minmax(0, 1fr) minmax(148px, 176px);
+    grid-template-columns: 1fr;
     gap: 10px;
     padding: 8px;
+  }
+
+  .controls-panel {
+    grid-row: 2;
+  }
+
+  #game-root {
+    grid-row: 1;
   }
 
   .controls-panel {

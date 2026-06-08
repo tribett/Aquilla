@@ -124,6 +124,10 @@ test("keeps debug state outside the game canvas on desktop", async ({ page }) =>
   await expectCanvasAndDebugSeparated(page, { width: 1280, height: 720 });
 });
 
+test("keeps debug state outside the game canvas at tablet widths", async ({ page }) => {
+  await expectCanvasAndDebugSeparated(page, { width: 900, height: 720 });
+});
+
 test("keeps debug state outside the game canvas on compact screens", async ({ page }) => {
   await expectCanvasAndDebugSeparated(page, { width: 640, height: 480 });
 });
