@@ -62,3 +62,15 @@ export interface Interactable {
   kind: InteractableKind;
   active: boolean;
 }
+
+export type EncounterKind = "thorn-beast" | "corrupted-guardian" | "fear-echo";
+
+export type EncounterState = "hostile" | "stunned" | "restored";
+
+export type EncounterAction = "staff-stun" | "staff-calm";
+
+export interface Encounter {
+  id: string;
+  kind: EncounterKind;
+  state: EncounterState;
+}
