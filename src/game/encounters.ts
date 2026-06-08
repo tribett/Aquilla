@@ -11,6 +11,14 @@ export function resolveEncounter(
   encounter: Encounter,
   action: EncounterAction,
 ): EncounterResult {
+  if (encounter.state === "restored") {
+    return {
+      state,
+      encounter,
+      message: "The creature is already restored.",
+    };
+  }
+
   if (
     encounter.kind === "corrupted-guardian" &&
     action === "staff-calm" &&

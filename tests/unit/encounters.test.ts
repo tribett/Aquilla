@@ -19,4 +19,25 @@ describe("resolveEncounter", () => {
     expect(result.state.objectives.guardianCalmed).toBe(true);
     expect(result.message).toBe("The guardian lowers its head and remembers its charge.");
   });
+
+  it("keeps restored encounters terminal", () => {
+    const guardian: Encounter = {
+      id: "fold-guardian",
+      kind: "corrupted-guardian",
+      state: "restored",
+    };
+    const initialState = createInitialState();
+    const state = {
+      ...initialState,
+      objectives: {
+        ...initialState.objectives,
+        guardianCalmed: true,
+      },
+    };
+
+    const result = resolveEncounter(state, guardian, "staff-stun");
+
+    expect(result.encounter.state).toBe("restored");
+    expect(result.state.objectives.guardianCalmed).toBe(true);
+  });
 });
