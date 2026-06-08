@@ -48,3 +48,9 @@ export interface GameState {
   inventory: InventoryItem[];
   objectives: Objectives;
 }
+
+export interface WorldMap {
+  width: number;
+  height: number;
+  blockedTiles: Vector2[];
+}
