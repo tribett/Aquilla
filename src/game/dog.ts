@@ -15,7 +15,23 @@ export function herdNearestSheep(state: GameState): GameState {
     return state;
   }
 
-  const sheepToGather = state.sheep.find((sheep) => !sheep.gathered);
+  const dogPosition = state.dog.position;
+  const sheepToGather = state.sheep.reduce<Sheep | undefined>((nearest, candidate) => {
+    if (candidate.gathered) {
+      return nearest;
+    }
+
+    if (!nearest) {
+      return candidate;
+    }
+
+    const candidateDistance =
+      (candidate.position.x - dogPosition.x) ** 2 + (candidate.position.y - dogPosition.y) ** 2;
+    const nearestDistance =
+      (nearest.position.x - dogPosition.x) ** 2 + (nearest.position.y - dogPosition.y) ** 2;
+
+    return candidateDistance < nearestDistance ? candidate : nearest;
+  }, undefined);
 
   if (!sheepToGather) {
     return state;

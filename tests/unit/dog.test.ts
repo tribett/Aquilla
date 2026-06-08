@@ -19,4 +19,28 @@ describe("dog commands", () => {
     expect(next.objectives.gatheredSheep).toBe(1);
     expect(next.sheep.filter((sheep) => sheep.gathered)).toHaveLength(1);
   });
+
+  it("gathers the closest ungathered sheep even when it is not first", () => {
+    const initialState = createInitialState();
+    const state = commandDog(
+      {
+        ...initialState,
+        dog: {
+          ...initialState.dog,
+          position: { x: 0, y: 0 },
+        },
+        sheep: [
+          { id: "far-sheep", name: "Far Sheep", position: { x: 8, y: 8 }, gathered: false },
+          { id: "near-sheep", name: "Near Sheep", position: { x: 1, y: 0 }, gathered: false },
+          { id: "gathered-sheep", name: "Gathered Sheep", position: { x: 0, y: 1 }, gathered: true },
+        ],
+      },
+      "herd",
+    );
+
+    const next = herdNearestSheep(state);
+
+    expect(next.sheep.find((sheep) => sheep.id === "near-sheep")?.gathered).toBe(true);
+    expect(next.sheep.find((sheep) => sheep.id === "far-sheep")?.gathered).toBe(false);
+  });
 });
