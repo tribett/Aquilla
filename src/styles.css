@@ -155,7 +155,11 @@ body {
 }
 
 #canvas-host {
-  width: min(616px, max(320px, calc(100vw - 664px)), calc((100dvh - 196px) * 1.333333));
+  width: min(
+    616px,
+    max(320px, calc(100vw - 664px)),
+    max(320px, calc((100dvh - 196px) * 1.333333))
+  );
   aspect-ratio: 4 / 3;
 }
 
@@ -197,7 +201,7 @@ body {
   }
 
   #canvas-host {
-    width: min(100%, 560px, calc((100dvh - 260px) * 1.333333));
+    width: min(100%, 560px, max(320px, calc((100dvh - 260px) * 1.333333)));
   }
 
   #debug-state {
@@ -270,7 +274,7 @@ body {
   }
 
   #canvas-host {
-    width: min(100%, 440px, calc((100dvh - 280px) * 1.333333));
+    width: min(100%, 440px, max(280px, calc((100dvh - 280px) * 1.333333)));
   }
 
   #debug-state {
@@ -285,6 +289,6 @@ body {
   }
 
   #canvas-host {
-    width: min(100%, 420px, calc((100dvh - 360px) * 1.333333));
+    width: min(100%, 420px, max(280px, calc((100dvh - 360px) * 1.333333)));
   }
 }

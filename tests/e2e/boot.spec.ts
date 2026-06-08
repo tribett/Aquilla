@@ -50,6 +50,7 @@ async function expectCanvasAndDebugSeparated(
 
     return {
       canvas: toBox(canvasElement.getBoundingClientRect()),
+      canvasHost: toBox(canvasElement.parentElement?.getBoundingClientRect() ?? canvasElement.getBoundingClientRect()),
       debug: toBox(debugElement.getBoundingClientRect()),
       documentWidth: document.documentElement.scrollWidth,
       viewport: { height: window.innerHeight, width: window.innerWidth },
@@ -61,6 +62,7 @@ async function expectCanvasAndDebugSeparated(
   expect(layout.canvas.top).toBeGreaterThanOrEqual(0);
   expect(layout.canvas.right).toBeLessThanOrEqual(layout.viewport.width);
   expect(layout.canvas.bottom).toBeLessThanOrEqual(layout.viewport.height);
+  expect(layout.canvasHost.right - layout.canvasHost.left).toBeGreaterThanOrEqual(240);
   expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewport.width);
 }
 
@@ -130,4 +132,8 @@ test("keeps debug state outside the game canvas at tablet widths", async ({ page
 
 test("keeps debug state outside the game canvas on compact screens", async ({ page }) => {
   await expectCanvasAndDebugSeparated(page, { width: 640, height: 480 });
+});
+
+test("keeps a playable canvas size in short compact viewports", async ({ page }) => {
+  await expectCanvasAndDebugSeparated(page, { width: 390, height: 360 });
 });
