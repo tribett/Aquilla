@@ -13,6 +13,20 @@ export function createInitialState(): GameState {
       health: 3,
       maxHealth: 3,
     },
+    creatures: [
+      {
+        id: "thorn-prowler-north",
+        kind: "thorn-prowler",
+        name: "North Thorn Prowler",
+        patrol: [
+          { x: 6, y: 3 },
+          { x: 6, y: 4 },
+        ],
+        patrolIndex: 0,
+        position: { x: 6, y: 3 },
+        state: "hostile",
+      },
+    ],
     dog: {
       id: "sheepdog",
       name: "Sheepdog",
@@ -55,7 +69,9 @@ export function createInitialState(): GameState {
       requiredSheep: 3,
       sanctumWitnessSteps: 0,
       requiredThornSnares: 2,
+      requiredThornProwlers: 1,
       thornSnaresCleared: 0,
+      thornProwlersRestored: 0,
       waterRestored: false,
     },
   };

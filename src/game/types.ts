@@ -43,6 +43,17 @@ export interface Hazard extends Actor {
   kind: "thorn-snare";
 }
 
+export type CreatureKind = "thorn-prowler";
+
+export type CreatureState = "hostile" | "distracted" | "restored";
+
+export interface Creature extends Actor {
+  kind: CreatureKind;
+  patrol: Vector2[];
+  patrolIndex: number;
+  state: CreatureState;
+}
+
 export interface Objectives {
   creedBeaconsLit: number;
   fearEchoCalmed: boolean;
@@ -56,7 +67,9 @@ export interface Objectives {
   requiredSheep: number;
   sanctumWitnessSteps: number;
   requiredThornSnares: number;
+  requiredThornProwlers: number;
   thornSnaresCleared: number;
+  thornProwlersRestored: number;
   waterRestored: boolean;
 }
 
@@ -64,6 +77,7 @@ export interface GameState {
   region: "briarfold-valley";
   currentArea: AreaId;
   player: Player;
+  creatures: Creature[];
   dog: Sheepdog;
   hazards: Hazard[];
   sheep: Sheep[];

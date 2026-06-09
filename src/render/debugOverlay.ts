@@ -32,6 +32,9 @@ export function renderDebugOverlay(state: GameState): void {
     `Ruins ${state.objectives.lanternRuinsRestored ? "restored" : "waiting"}`,
     `Sanctum ${state.objectives.sanctumWitnessSteps}/${state.objectives.requiredSanctumWitnessSteps}`,
     `Thorns ${state.objectives.thornSnaresCleared}/${state.objectives.requiredThornSnares}`,
+    ...state.creatures.map(
+      (creature) => `Prowler ${creature.state} ${creature.position.x},${creature.position.y}`,
+    ),
     `Game ${state.objectives.gameComplete ? "complete" : "in-progress"}`,
     `Light ${AQUILLA_ART.palette.trueLight} / ${AQUILLA_ART.palette.falseLight}`,
   ].join("\n");

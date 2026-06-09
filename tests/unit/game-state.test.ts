@@ -15,6 +15,20 @@ describe("createInitialState", () => {
     expect(state.player.maxHealth).toBe(3);
     expect(state.inventory).toContain("shepherd-staff");
     expect(state.dog.style).toBe("border-collie");
+    expect(state.creatures).toEqual([
+      {
+        id: "thorn-prowler-north",
+        kind: "thorn-prowler",
+        name: "North Thorn Prowler",
+        patrol: [
+          { x: 6, y: 3 },
+          { x: 6, y: 4 },
+        ],
+        patrolIndex: 0,
+        position: { x: 6, y: 3 },
+        state: "hostile",
+      },
+    ]);
     expect(state.hazards).toEqual([
       {
         active: true,
@@ -44,7 +58,9 @@ describe("createInitialState", () => {
       requiredSheep: 3,
       sanctumWitnessSteps: 0,
       requiredThornSnares: 2,
+      requiredThornProwlers: 1,
       thornSnaresCleared: 0,
+      thornProwlersRestored: 0,
       waterRestored: false,
     });
   });
@@ -58,6 +74,12 @@ describe("createInitialState", () => {
     });
     state.hazards.forEach((hazard) => {
       expect(worldMap.blockedTiles).not.toContainEqual(hazard.position);
+    });
+    state.creatures.forEach((creature) => {
+      expect(worldMap.blockedTiles).not.toContainEqual(creature.position);
+      creature.patrol.forEach((position) => {
+        expect(worldMap.blockedTiles).not.toContainEqual(position);
+      });
     });
   });
 });

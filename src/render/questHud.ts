@@ -32,6 +32,7 @@ function renderObjectiveText(objectives: Objectives): void {
   const creed = `Creed beacons ${objectives.creedBeaconsLit}/${objectives.requiredCreedBeacons}`;
   const sanctum = `Sanctum witness ${objectives.sanctumWitnessSteps}/${objectives.requiredSanctumWitnessSteps}`;
   const thorns = `Thorn snares ${objectives.thornSnaresCleared}/${objectives.requiredThornSnares}`;
+  const prowlers = `Prowlers restored ${objectives.thornProwlersRestored}/${objectives.requiredThornProwlers}`;
 
   updateText("#objective-sheep", sheep);
   updateText("#objective-water", water);
@@ -41,6 +42,7 @@ function renderObjectiveText(objectives: Objectives): void {
   updateText("#objective-creed", creed);
   updateText("#objective-sanctum", sanctum);
   updateText("#objective-thorns", thorns);
+  updateText("#objective-prowlers", prowlers);
   updateText("#journal-objective-sheep", sheep);
   updateText("#journal-objective-water", water);
   updateText("#journal-objective-guardian", guardian);
@@ -49,6 +51,7 @@ function renderObjectiveText(objectives: Objectives): void {
   updateText("#journal-objective-creed", creed);
   updateText("#journal-objective-sanctum", sanctum);
   updateText("#journal-objective-thorns", thorns);
+  updateText("#journal-objective-prowlers", prowlers);
 }
 
 export function isJournalOpen(): boolean {

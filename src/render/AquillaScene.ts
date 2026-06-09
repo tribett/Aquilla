@@ -16,6 +16,7 @@ import { restoreFoldIfReady } from "../game/dungeon";
 import { resolveEncounter } from "../game/encounters";
 import { resolveHazardStep, restoreThornSnare } from "../game/hazards";
 import { movePlayer } from "../game/movement";
+import { advanceProwlers, distractOrRestoreProwler, resolveProwlerStep } from "../game/prowlers";
 import {
   completeSanctumStep,
   getNextSanctumStepId,
@@ -26,7 +27,7 @@ import {
 import { clearGameSave, loadGameSave, saveGame } from "../game/save";
 import { useStaffOnObject } from "../game/staff";
 import type { DialogueSession } from "../game/dialogue";
-import type { AreaId, Direction, Encounter, GameState, Hazard, Interactable, Sheep, Vector2, WorldMap } from "../game/types";
+import type { AreaId, Creature, Direction, Encounter, GameState, Hazard, Interactable, Sheep, Vector2, WorldMap } from "../game/types";
 import { renderDebugOverlay } from "./debugOverlay";
 import { renderDialogueHud } from "./dialogueHud";
 import { isJournalOpen, renderQuestHud, setJournalOpen, toggleJournal } from "./questHud";
@@ -269,8 +270,11 @@ export class AquillaScene extends Phaser.Scene {
     const previousPosition = this.state.player.position;
     const renderedFrom = this.getRenderedPlayerTilePosition();
     const movedState = movePlayer(this.state, direction, this.getWorldMap());
-    const hazardResult = resolveHazardStep(movedState, previousPosition);
-    this.state = hazardResult.state;
+    const prowlerResult = resolveProwlerStep(movedState, previousPosition);
+    const hazardResult = prowlerResult.message
+      ? prowlerResult
+      : resolveHazardStep(prowlerResult.state, previousPosition);
+    this.state = hazardResult.message ? hazardResult.state : advanceProwlers(hazardResult.state);
     const nextPosition = this.state.player.position;
     const moved =
       previousPosition.x !== nextPosition.x ||
@@ -320,6 +324,15 @@ export class AquillaScene extends Phaser.Scene {
     const thornSnare = this.getNearbyActiveThornSnare();
     if (thornSnare) {
       const result = restoreThornSnare(this.state, thornSnare.id);
+      this.state = result.state;
+      this.questMessage = result.message;
+      this.refreshScene();
+      return;
+    }
+
+    const prowler = this.getNearbyActiveProwler();
+    if (prowler) {
+      const result = distractOrRestoreProwler(this.state, prowler.id);
       this.state = result.state;
       this.questMessage = result.message;
       this.refreshScene();
@@ -558,6 +571,13 @@ export class AquillaScene extends Phaser.Scene {
       return "Press E: restore the thorn snare with the Shepherd's Staff.";
     }
 
+    const prowler = this.getNearbyActiveProwler();
+    if (prowler) {
+      return prowler.state === "distracted"
+        ? "Press E: restore the thorn prowler with the Shepherd's Staff."
+        : "Press E: ask the sheepdog to distract the thorn prowler.";
+    }
+
     if (this.isNear(BRIARFOLD_ELDER_POSITION)) {
       return "Press E: speak with Elder Mara.";
     }
@@ -602,6 +622,12 @@ export class AquillaScene extends Phaser.Scene {
 
   private getNearbySanctumStep(): SanctumStepId | undefined {
     return SANCTUM_STEP_ORDER.find((step) => this.isNear(SANCTUM_STEP_POSITIONS[step]));
+  }
+
+  private getNearbyActiveProwler(): Creature | undefined {
+    if (this.state.currentArea !== "briarfold") return undefined;
+
+    return this.state.creatures.find((creature) => creature.state !== "restored" && this.isNear(creature.position));
   }
 
   private getNearbyActiveThornSnare(): Hazard | undefined {
@@ -680,6 +706,7 @@ export class AquillaScene extends Phaser.Scene {
 
     this.drawBriarfoldElder(graphics);
     this.drawThornSnares(graphics);
+    this.drawProwlers(graphics);
     this.drawSheep(graphics);
     this.drawWaterRestoration(graphics);
     this.drawGuardian(graphics);
@@ -732,6 +759,37 @@ export class AquillaScene extends Phaser.Scene {
       graphics.fillRect(x + 1, y + 6, 4, 4);
       graphics.fillRect(x + 19, y + 6, 4, 4);
       graphics.fillRect(x + 8, y, 6, 4);
+    });
+  }
+
+  private drawProwlers(graphics: Phaser.GameObjects.Graphics): void {
+    this.state.creatures.forEach((creature) => {
+      if (creature.kind !== "thorn-prowler") return;
+
+      const x = creature.position.x * TILE_SIZE + 6;
+      const y = creature.position.y * TILE_SIZE + 5;
+      const restored = creature.state === "restored";
+      const distracted = creature.state === "distracted";
+      const bodyColor = restored
+        ? AQUILLA_ART.palette.trueLight
+        : distracted
+          ? AQUILLA_ART.palette.falseLight
+          : AQUILLA_ART.palette.falseLightFringe;
+
+      graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+      graphics.fillRect(x + 2, y + 8, 18, 13);
+      graphics.fillRect(x + 15, y + 4, 8, 10);
+      graphics.fillRect(x + 4, y + 20, 4, 7);
+      graphics.fillRect(x + 15, y + 20, 4, 7);
+      graphics.fillStyle(hexToNumber(bodyColor), restored ? 0.88 : 0.96);
+      graphics.fillRect(x + 4, y + 9, 15, 10);
+      graphics.fillRect(x + 16, y + 6, 5, 6);
+      graphics.fillStyle(hexToNumber(restored ? AQUILLA_ART.palette.trueLightHighlight : "#d2553f"), 1);
+      graphics.fillRect(x + 18, y + 8, 2, 2);
+      if (!restored) {
+        graphics.fillRect(x, y + 5, 6, 3);
+        graphics.fillRect(x + 8, y + 3, 4, 4);
+      }
     });
   }
 
@@ -921,7 +979,7 @@ export class AquillaScene extends Phaser.Scene {
       guardian: this.guardian,
       questMessage: this.questMessage,
       state: this.state,
-      version: 4,
+      version: 5,
       waterChannel: this.waterChannel,
     });
   }

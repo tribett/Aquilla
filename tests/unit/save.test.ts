@@ -60,7 +60,7 @@ describe("game save persistence", () => {
           position: { x: 6, y: 6 },
         },
       },
-      version: 4,
+      version: 5,
       waterChannel: { id: "dry-channel", kind: "water-channel", active: true },
     };
 
@@ -80,7 +80,7 @@ describe("game save persistence", () => {
       guardian: { id: "fold-guardian", kind: "corrupted-guardian", state: "hostile" },
       questMessage: "Seek the scattered sheep, restore the spring, and make the Fold ready.",
       state: createInitialState(),
-      version: 4,
+      version: 5,
       waterChannel: { id: "dry-channel", kind: "water-channel", active: false },
     });
     clearGameSave(storage);
