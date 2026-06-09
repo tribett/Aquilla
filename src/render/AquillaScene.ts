@@ -25,6 +25,13 @@ import {
   type SanctumStepId,
 } from "../game/sanctum";
 import { clearGameSave, loadGameSave, saveGame } from "../game/save";
+import {
+  isShepherdGateOpen,
+  sendDogToShepherdGatePlate,
+  SHEPHERD_GATE_PLATE_POSITION,
+  SHEPHERD_GATE_TILES,
+  withShepherdGateCollision,
+} from "../game/shepherdGate";
 import { useStaffOnObject } from "../game/staff";
 import type { DialogueSession } from "../game/dialogue";
 import type { AreaId, Creature, Direction, Encounter, GameState, Hazard, Interactable, Sheep, Vector2, WorldMap } from "../game/types";
@@ -337,9 +344,15 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private fetchWithDog(): void {
+    const fetchesGatePlate =
+      this.state.currentArea === "briarfold" &&
+      !isShepherdGateOpen(this.state) &&
+      this.isNearShepherdGate();
     const dogFrom = this.getRenderedDogTilePosition();
     const previousDogPosition = this.state.dog.position;
-    const nextState = fetchNearestLostSheep(this.state);
+    const nextState = fetchesGatePlate
+      ? sendDogToShepherdGatePlate(this.state)
+      : fetchNearestLostSheep(this.state);
     const nextDogPosition = nextState.dog.position;
     this.state = nextState;
 
@@ -360,17 +373,23 @@ export class AquillaScene extends Phaser.Scene {
       sheep.position.x === this.state.dog.position.x &&
       sheep.position.y + 1 === this.state.dog.position.y,
     );
-    this.questMessage = fetchedSheep
-      ? `The sheepdog runs ahead toward ${fetchedSheep.name}.`
-      : "The sheepdog searches, but no lost sheep remain in this pasture.";
+    this.questMessage = fetchesGatePlate
+      ? "The sheepdog runs back to the old pressure plate by the Shepherd's Gate."
+      : fetchedSheep
+        ? `The sheepdog runs ahead toward ${fetchedSheep.name}.`
+        : "The sheepdog searches, but no lost sheep remain in this pasture.";
     this.refreshScene();
   }
 
   private toggleDogStay(): void {
     this.state = commandDog(this.state, this.state.dog.command === "stay" ? "follow" : "stay");
-    this.questMessage = this.state.dog.command === "stay"
-      ? "The sheepdog waits and watches from its place."
-      : "The sheepdog returns to Aquilla's side.";
+    if (isShepherdGateOpen(this.state) && this.state.dog.command === "stay") {
+      this.questMessage = "The sheepdog holds the old pressure plate; the Shepherd's Gate grinds open.";
+    } else {
+      this.questMessage = this.state.dog.command === "stay"
+        ? "The sheepdog waits and watches from its place."
+        : "The sheepdog returns to Aquilla's side.";
+    }
     this.refreshScene();
   }
 
@@ -418,6 +437,12 @@ export class AquillaScene extends Phaser.Scene {
 
     if (this.isNear(BRIARFOLD_ELDER_POSITION)) {
       this.openDialogue();
+      return;
+    }
+
+    if (this.isNearShepherdGate() && !isShepherdGateOpen(this.state)) {
+      this.questMessage = "The Shepherd's Gate is closed; send the sheepdog to the old plate and ask it to stay.";
+      this.refreshScene();
       return;
     }
 
@@ -662,6 +687,12 @@ export class AquillaScene extends Phaser.Scene {
       return "Press E: speak with Elder Mara.";
     }
 
+    if (this.isNearShepherdGate()) {
+      return isShepherdGateOpen(this.state)
+        ? "The Shepherd's Gate is open."
+        : "Press F then S: send the sheepdog to hold the old plate.";
+    }
+
     const sheep = this.getNearbyLostSheep();
     if (sheep) {
       return `Press E: ask the sheepdog to guide ${sheep.name}.`;
@@ -694,6 +725,12 @@ export class AquillaScene extends Phaser.Scene {
 
   private isNear(position: Vector2): boolean {
     return distanceBetween(this.state.player.position, position) <= INTERACTION_RANGE;
+  }
+
+  private isNearShepherdGate(): boolean {
+    if (this.state.currentArea !== "briarfold") return false;
+
+    return SHEPHERD_GATE_TILES.some((tile) => this.isNear(tile));
   }
 
   private getNearbyCreedBeacon(): CreedBeaconId | undefined {
@@ -803,6 +840,7 @@ export class AquillaScene extends Phaser.Scene {
     this.drawBriarfoldElder(graphics);
     this.drawThornSnares(graphics);
     this.drawProwlers(graphics);
+    this.drawShepherdGate(graphics);
     this.drawSheep(graphics);
     this.drawWaterRestoration(graphics);
     this.drawGuardian(graphics);
@@ -886,6 +924,34 @@ export class AquillaScene extends Phaser.Scene {
         graphics.fillRect(x, y + 5, 6, 3);
         graphics.fillRect(x + 8, y + 3, 4, 4);
       }
+    });
+  }
+
+  private drawShepherdGate(graphics: Phaser.GameObjects.Graphics): void {
+    const gateOpen = isShepherdGateOpen(this.state);
+    const plateX = SHEPHERD_GATE_PLATE_POSITION.x * TILE_SIZE + 4;
+    const plateY = SHEPHERD_GATE_PLATE_POSITION.y * TILE_SIZE + 7;
+
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+    graphics.fillRect(plateX, plateY, TILE_SIZE - 8, 10);
+    graphics.fillStyle(
+      hexToNumber(gateOpen ? AQUILLA_ART.palette.trueLight : AQUILLA_ART.palette.falseLight),
+      gateOpen ? 0.88 : 0.72,
+    );
+    graphics.fillRect(plateX + 3, plateY + 2, TILE_SIZE - 14, 6);
+
+    SHEPHERD_GATE_TILES.forEach((tile) => {
+      const x = tile.x * TILE_SIZE + 6;
+      const y = tile.y * TILE_SIZE + 2;
+
+      graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), gateOpen ? 0.55 : 1);
+      graphics.fillRect(x, y, 20, TILE_SIZE - 4);
+      graphics.fillStyle(
+        hexToNumber(gateOpen ? AQUILLA_ART.palette.trueLight : AQUILLA_ART.palette.panelTrim),
+        gateOpen ? 0.35 : 0.92,
+      );
+      graphics.fillRect(x + 4, y + 2, 4, TILE_SIZE - 8);
+      graphics.fillRect(x + 12, y + 2, 4, TILE_SIZE - 8);
     });
   }
 
@@ -1056,7 +1122,7 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private getWorldMap(): WorldMap {
-    return AREA_WORLD_MAPS[this.state.currentArea];
+    return withShepherdGateCollision(this.state, AREA_WORLD_MAPS[this.state.currentArea]);
   }
 
   private openDialogue(): void {

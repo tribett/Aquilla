@@ -57,15 +57,13 @@ test("plays the Fold loop through proximity prompts and one interact key", async
   await expect(debugState).toContainText("Guardian calmed");
   await expect(guardianObjective).toContainText("Guardian calmed");
 
-  await followPath(page, [
-    "ArrowDown",
-    "ArrowRight",
-    "ArrowRight",
-    "ArrowRight",
-    "ArrowRight",
-    "ArrowRight",
-    "ArrowRight",
-  ]);
+  await followPath(page, ["ArrowDown", "ArrowRight", "ArrowRight", "ArrowRight"]);
+  await expect(questPrompt).toContainText("Press F then S");
+  await page.keyboard.press("F");
+  await expect(debugState).toContainText("Dog fetch 9,6");
+  await page.keyboard.press("S");
+  await expect(debugState).toContainText("ShepherdGate open");
+  await followPath(page, ["ArrowRight", "ArrowRight", "ArrowRight"]);
   await page.keyboard.press("E");
   await expect(debugState).toContainText("Fold restored");
   await expect(foldObjective).toContainText("Fold restored");

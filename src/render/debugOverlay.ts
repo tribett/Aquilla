@@ -1,5 +1,6 @@
 import type { GameState } from "../game/types";
 import { AQUILLA_ART } from "../art/aquillaArt";
+import { isShepherdGateOpen } from "../game/shepherdGate";
 
 export function renderDebugOverlay(state: GameState): void {
   let overlay = document.querySelector<HTMLPreElement>("#debug-state");
@@ -32,6 +33,7 @@ export function renderDebugOverlay(state: GameState): void {
     `Ruins ${state.objectives.lanternRuinsRestored ? "restored" : "waiting"}`,
     `Sanctum ${state.objectives.sanctumWitnessSteps}/${state.objectives.requiredSanctumWitnessSteps}`,
     `Thorns ${state.objectives.thornSnaresCleared}/${state.objectives.requiredThornSnares}`,
+    `ShepherdGate ${isShepherdGateOpen(state) ? "open" : "closed"}`,
     ...state.creatures.map(
       (creature) => `Prowler ${creature.state} ${creature.position.x},${creature.position.y}`,
     ),
