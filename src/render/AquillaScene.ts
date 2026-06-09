@@ -17,7 +17,7 @@ const TILE_SIZE = 16 * PIXEL_SCALE;
 const SCENE_WIDTH = 20 * TILE_SIZE;
 const SCENE_HEIGHT = 13 * TILE_SIZE;
 const INTERACTION_RANGE = 1.5;
-const PLAYER_MOVE_DURATION_MS = 420;
+const DEFAULT_PLAYER_MOVE_DURATION_MS = 260;
 const PROTOTYPE_MAP = buildWorldMapFromScene(AQUILLA_ART.sceneMap);
 const FOLD_POSITION: Vector2 = { x: 17, y: 7 };
 const GUARDIAN_POSITION: Vector2 = { x: 11, y: 5 };
@@ -46,6 +46,18 @@ function easeInOut(progress: number): number {
 
 function distanceBetween(first: Vector2, second: Vector2): number {
   return Math.hypot(first.x - second.x, first.y - second.y);
+}
+
+function getPlayerMoveDurationMs(): number {
+  const requestedDuration = Number(
+    new URLSearchParams(window.location.search).get("motion"),
+  );
+
+  if (Number.isFinite(requestedDuration) && requestedDuration >= 120 && requestedDuration <= 1_200) {
+    return requestedDuration;
+  }
+
+  return DEFAULT_PLAYER_MOVE_DURATION_MS;
 }
 
 export class AquillaScene extends Phaser.Scene {
@@ -149,7 +161,7 @@ export class AquillaScene extends Phaser.Scene {
 
     if (moved) {
       this.playerMovement = {
-        durationMs: PLAYER_MOVE_DURATION_MS,
+        durationMs: getPlayerMoveDurationMs(),
         from: renderedFrom,
         startedAtMs: Date.now(),
         to: nextPosition,
