@@ -31,6 +31,7 @@ function renderObjectiveText(objectives: Objectives): void {
   const fear = objectives.fearEchoCalmed ? "Fear echo calmed" : "Fear echo restless";
   const creed = `Creed beacons ${objectives.creedBeaconsLit}/${objectives.requiredCreedBeacons}`;
   const sanctum = `Sanctum witness ${objectives.sanctumWitnessSteps}/${objectives.requiredSanctumWitnessSteps}`;
+  const thorns = `Thorn snares ${objectives.thornSnaresCleared}/${objectives.requiredThornSnares}`;
 
   updateText("#objective-sheep", sheep);
   updateText("#objective-water", water);
@@ -39,6 +40,7 @@ function renderObjectiveText(objectives: Objectives): void {
   updateText("#objective-fear", fear);
   updateText("#objective-creed", creed);
   updateText("#objective-sanctum", sanctum);
+  updateText("#objective-thorns", thorns);
   updateText("#journal-objective-sheep", sheep);
   updateText("#journal-objective-water", water);
   updateText("#journal-objective-guardian", guardian);
@@ -46,6 +48,7 @@ function renderObjectiveText(objectives: Objectives): void {
   updateText("#journal-objective-fear", fear);
   updateText("#journal-objective-creed", creed);
   updateText("#journal-objective-sanctum", sanctum);
+  updateText("#journal-objective-thorns", thorns);
 }
 
 export function isJournalOpen(): boolean {

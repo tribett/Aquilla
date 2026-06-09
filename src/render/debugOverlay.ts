@@ -21,6 +21,7 @@ export function renderDebugOverlay(state: GameState): void {
     `Art Bible ${AQUILLA_ART.direction.world} - ${AQUILLA_ART.direction.tone}`,
     `Area ${state.currentArea}`,
     `Aquilla ${state.player.position.x},${state.player.position.y}`,
+    `Resolve ${state.player.health}/${state.player.maxHealth}`,
     `Dog ${state.dog.command} ${state.dog.position.x},${state.dog.position.y}`,
     `Sheep ${state.objectives.gatheredSheep}/${state.objectives.requiredSheep}`,
     `Water ${state.objectives.waterRestored ? "restored" : "dry"}`,
@@ -30,6 +31,7 @@ export function renderDebugOverlay(state: GameState): void {
     `Creed ${state.objectives.creedBeaconsLit}/${state.objectives.requiredCreedBeacons}`,
     `Ruins ${state.objectives.lanternRuinsRestored ? "restored" : "waiting"}`,
     `Sanctum ${state.objectives.sanctumWitnessSteps}/${state.objectives.requiredSanctumWitnessSteps}`,
+    `Thorns ${state.objectives.thornSnaresCleared}/${state.objectives.requiredThornSnares}`,
     `Game ${state.objectives.gameComplete ? "complete" : "in-progress"}`,
     `Light ${AQUILLA_ART.palette.trueLight} / ${AQUILLA_ART.palette.falseLight}`,
   ].join("\n");

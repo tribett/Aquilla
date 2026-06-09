@@ -14,6 +14,7 @@ import { advanceDialogue, BRIARFOLD_ELDER_DIALOGUE, createDialogueSession } from
 import { commandDog, herdNearestSheep, herdSheepById } from "../game/dog";
 import { restoreFoldIfReady } from "../game/dungeon";
 import { resolveEncounter } from "../game/encounters";
+import { resolveHazardStep, restoreThornSnare } from "../game/hazards";
 import { movePlayer } from "../game/movement";
 import {
   completeSanctumStep,
@@ -25,7 +26,7 @@ import {
 import { clearGameSave, loadGameSave, saveGame } from "../game/save";
 import { useStaffOnObject } from "../game/staff";
 import type { DialogueSession } from "../game/dialogue";
-import type { AreaId, Direction, Encounter, GameState, Interactable, Sheep, Vector2, WorldMap } from "../game/types";
+import type { AreaId, Direction, Encounter, GameState, Hazard, Interactable, Sheep, Vector2, WorldMap } from "../game/types";
 import { renderDebugOverlay } from "./debugOverlay";
 import { renderDialogueHud } from "./dialogueHud";
 import { isJournalOpen, renderQuestHud, setJournalOpen, toggleJournal } from "./questHud";
@@ -267,17 +268,26 @@ export class AquillaScene extends Phaser.Scene {
   private move(direction: Direction): void {
     const previousPosition = this.state.player.position;
     const renderedFrom = this.getRenderedPlayerTilePosition();
-    this.state = movePlayer(this.state, direction, this.getWorldMap());
+    const movedState = movePlayer(this.state, direction, this.getWorldMap());
+    const hazardResult = resolveHazardStep(movedState, previousPosition);
+    this.state = hazardResult.state;
     const nextPosition = this.state.player.position;
-    const moved = previousPosition.x !== nextPosition.x || previousPosition.y !== nextPosition.y;
+    const moved =
+      previousPosition.x !== nextPosition.x ||
+      previousPosition.y !== nextPosition.y;
 
-    if (moved) {
+    if (hazardResult.message) {
+      this.playerMovement = undefined;
+      this.questMessage = hazardResult.message;
+    } else if (moved) {
       this.playerMovement = {
         durationMs: getPlayerMoveDurationMs(),
         from: renderedFrom,
         startedAtMs: Date.now(),
         to: nextPosition,
       };
+    } else {
+      this.playerMovement = undefined;
     }
 
     this.refreshScene();
@@ -304,6 +314,15 @@ export class AquillaScene extends Phaser.Scene {
 
     if (this.state.currentArea === "sanctum") {
       this.interactSanctum();
+      return;
+    }
+
+    const thornSnare = this.getNearbyActiveThornSnare();
+    if (thornSnare) {
+      const result = restoreThornSnare(this.state, thornSnare.id);
+      this.state = result.state;
+      this.questMessage = result.message;
+      this.refreshScene();
       return;
     }
 
@@ -534,6 +553,11 @@ export class AquillaScene extends Phaser.Scene {
       return "Explore the old pasture. The road east is newly opened.";
     }
 
+    const thornSnare = this.getNearbyActiveThornSnare();
+    if (thornSnare) {
+      return "Press E: restore the thorn snare with the Shepherd's Staff.";
+    }
+
     if (this.isNear(BRIARFOLD_ELDER_POSITION)) {
       return "Press E: speak with Elder Mara.";
     }
@@ -578,6 +602,12 @@ export class AquillaScene extends Phaser.Scene {
 
   private getNearbySanctumStep(): SanctumStepId | undefined {
     return SANCTUM_STEP_ORDER.find((step) => this.isNear(SANCTUM_STEP_POSITIONS[step]));
+  }
+
+  private getNearbyActiveThornSnare(): Hazard | undefined {
+    if (this.state.currentArea !== "briarfold") return undefined;
+
+    return this.state.hazards.find((hazard) => hazard.active && this.isNear(hazard.position));
   }
 
   private redrawWorld(): void {
@@ -649,6 +679,7 @@ export class AquillaScene extends Phaser.Scene {
     }
 
     this.drawBriarfoldElder(graphics);
+    this.drawThornSnares(graphics);
     this.drawSheep(graphics);
     this.drawWaterRestoration(graphics);
     this.drawGuardian(graphics);
@@ -679,6 +710,28 @@ export class AquillaScene extends Phaser.Scene {
         sheep.position.x * TILE_SIZE + 6,
         sheep.position.y * TILE_SIZE + 12,
       );
+    });
+  }
+
+  private drawThornSnares(graphics: Phaser.GameObjects.Graphics): void {
+    this.state.hazards.forEach((hazard) => {
+      const x = hazard.position.x * TILE_SIZE + 5;
+      const y = hazard.position.y * TILE_SIZE + 7;
+      const restored = !hazard.active;
+
+      graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+      graphics.fillRect(x + 2, y + 8, 22, 5);
+      graphics.fillRect(x + 9, y + 1, 5, 20);
+      graphics.fillStyle(
+        hexToNumber(restored ? AQUILLA_ART.palette.trueLight : AQUILLA_ART.palette.falseLightFringe),
+        restored ? 0.86 : 0.95,
+      );
+      graphics.fillRect(x + 4, y + 9, 18, 3);
+      graphics.fillRect(x + 10, y + 3, 3, 16);
+      graphics.fillStyle(hexToNumber(restored ? AQUILLA_ART.palette.trueLightHighlight : "#d2553f"), 1);
+      graphics.fillRect(x + 1, y + 6, 4, 4);
+      graphics.fillRect(x + 19, y + 6, 4, 4);
+      graphics.fillRect(x + 8, y, 6, 4);
     });
   }
 
@@ -868,7 +921,7 @@ export class AquillaScene extends Phaser.Scene {
       guardian: this.guardian,
       questMessage: this.questMessage,
       state: this.state,
-      version: 3,
+      version: 4,
       waterChannel: this.waterChannel,
     });
   }
@@ -916,8 +969,18 @@ export class AquillaScene extends Phaser.Scene {
     graphics.lineStyle(4, hexToNumber(AQUILLA_ART.palette.panelTrim), 1);
     graphics.strokeRect(0, SCENE_HEIGHT, 640, 480 - SCENE_HEIGHT);
 
-    for (let index = 0; index < 3; index += 1) {
-      drawPixelAsset(graphics, AQUILLA_ART.icons.heart, 18 + index * 38, SCENE_HEIGHT + 16, 2);
+    for (let index = 0; index < this.state.player.maxHealth; index += 1) {
+      const x = 18 + index * 38;
+      const y = SCENE_HEIGHT + 16;
+
+      if (index < this.state.player.health) {
+        drawPixelAsset(graphics, AQUILLA_ART.icons.heart, x, y, 2);
+      } else {
+        graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+        graphics.fillRect(x + 4, y + 6, 22, 18);
+        graphics.fillStyle(hexToNumber("#7d745a"), 1);
+        graphics.fillRect(x + 7, y + 9, 16, 12);
+      }
     }
 
     this.drawSheepProgress(graphics);

@@ -25,6 +25,8 @@ export interface Actor {
 export interface Player extends Actor {
   role: "shepherd-boy";
   facing: Direction;
+  health: number;
+  maxHealth: number;
 }
 
 export interface Sheepdog extends Actor {
@@ -34,6 +36,11 @@ export interface Sheepdog extends Actor {
 
 export interface Sheep extends Actor {
   gathered: boolean;
+}
+
+export interface Hazard extends Actor {
+  active: boolean;
+  kind: "thorn-snare";
 }
 
 export interface Objectives {
@@ -48,6 +55,8 @@ export interface Objectives {
   requiredSanctumWitnessSteps: number;
   requiredSheep: number;
   sanctumWitnessSteps: number;
+  requiredThornSnares: number;
+  thornSnaresCleared: number;
   waterRestored: boolean;
 }
 
@@ -56,6 +65,7 @@ export interface GameState {
   currentArea: AreaId;
   player: Player;
   dog: Sheepdog;
+  hazards: Hazard[];
   sheep: Sheep[];
   inventory: InventoryItem[];
   objectives: Objectives;

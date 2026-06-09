@@ -10,6 +10,8 @@ export function createInitialState(): GameState {
       role: "shepherd-boy",
       position: { x: 5, y: 5 },
       facing: "down",
+      health: 3,
+      maxHealth: 3,
     },
     dog: {
       id: "sheepdog",
@@ -18,6 +20,22 @@ export function createInitialState(): GameState {
       position: { x: 4, y: 5 },
       command: "follow",
     },
+    hazards: [
+      {
+        active: true,
+        id: "thorn-snare-north",
+        kind: "thorn-snare",
+        name: "North Thorn Snare",
+        position: { x: 5, y: 3 },
+      },
+      {
+        active: true,
+        id: "thorn-snare-highroad",
+        kind: "thorn-snare",
+        name: "Highroad Thorn Snare",
+        position: { x: 13, y: 3 },
+      },
+    ],
     sheep: [
       { id: "sheep-1", name: "Lost Sheep 1", position: { x: 9, y: 4 }, gathered: false },
       { id: "sheep-2", name: "Lost Sheep 2", position: { x: 12, y: 7 }, gathered: false },
@@ -36,6 +54,8 @@ export function createInitialState(): GameState {
       requiredSanctumWitnessSteps: 3,
       requiredSheep: 3,
       sanctumWitnessSteps: 0,
+      requiredThornSnares: 2,
+      thornSnaresCleared: 0,
       waterRestored: false,
     },
   };
