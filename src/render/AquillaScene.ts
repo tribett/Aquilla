@@ -3,13 +3,16 @@ import { AQUILLA_ART } from "../art/aquillaArt";
 import { drawPixelAsset, drawTileScene, hexToNumber } from "../art/pixelRenderer";
 import { enterOldPastureIfReady } from "../game/areas";
 import { createInitialState } from "../game/createInitialState";
+import { advanceDialogue, BRIARFOLD_ELDER_DIALOGUE, createDialogueSession } from "../game/dialogue";
 import { commandDog, herdNearestSheep, herdSheepById } from "../game/dog";
 import { restoreFoldIfReady } from "../game/dungeon";
 import { resolveEncounter } from "../game/encounters";
 import { movePlayer } from "../game/movement";
 import { useStaffOnObject } from "../game/staff";
+import type { DialogueSession } from "../game/dialogue";
 import type { AreaId, Direction, Encounter, GameState, Interactable, Sheep, Vector2, WorldMap } from "../game/types";
 import { renderDebugOverlay } from "./debugOverlay";
+import { renderDialogueHud } from "./dialogueHud";
 import { isJournalOpen, renderQuestHud, setJournalOpen, toggleJournal } from "./questHud";
 import { buildWorldMapFromScene } from "./worldMap";
 
@@ -21,6 +24,7 @@ const INTERACTION_RANGE = 1.5;
 const DEFAULT_PLAYER_MOVE_DURATION_MS = 260;
 const PROTOTYPE_MAP = buildWorldMapFromScene(AQUILLA_ART.sceneMap);
 const FOLD_POSITION: Vector2 = { x: 17, y: 7 };
+const BRIARFOLD_ELDER_POSITION: Vector2 = { x: 3, y: 5 };
 const GUARDIAN_POSITION: Vector2 = { x: 11, y: 5 };
 const WATER_CHANNEL_POSITION: Vector2 = { x: 7, y: 10 };
 const OLD_PASTURE_WAYMARK_POSITION: Vector2 = { x: 16, y: 6 };
@@ -85,6 +89,7 @@ export class AquillaScene extends Phaser.Scene {
     active: false,
   };
   private graphics?: Phaser.GameObjects.Graphics;
+  private activeDialogue?: DialogueSession;
   private playerMovement?: PlayerMovementAnimation;
   private questMessage = "Seek the scattered sheep, restore the spring, and make the Fold ready.";
 
@@ -97,6 +102,7 @@ export class AquillaScene extends Phaser.Scene {
     this.graphics = this.add.graphics();
     this.redrawWorld();
     this.registerKeyboardControls();
+    renderDialogueHud();
     setJournalOpen(false);
     renderDebugOverlay(this.state);
     this.renderQuestState();
@@ -115,6 +121,11 @@ export class AquillaScene extends Phaser.Scene {
 
   private registerKeyboardControls(): void {
     this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
+      if (this.handleDialogueKey(event.key)) {
+        event.preventDefault();
+        return;
+      }
+
       if (this.handleJournalKey(event.key)) {
         event.preventDefault();
         return;
@@ -136,6 +147,29 @@ export class AquillaScene extends Phaser.Scene {
 
       event.preventDefault();
     });
+  }
+
+  private handleDialogueKey(key: string): boolean {
+    if (!this.activeDialogue) return false;
+
+    if (key === "Escape") {
+      this.closeDialogue();
+      return true;
+    }
+
+    if (key.toLowerCase() === "e" || key === " ") {
+      this.activeDialogue = advanceDialogue(this.activeDialogue);
+
+      if (this.activeDialogue.complete) {
+        this.closeDialogue();
+        return true;
+      }
+
+      renderDialogueHud(this.activeDialogue);
+      return true;
+    }
+
+    return true;
   }
 
   private handleJournalKey(key: string): boolean {
@@ -212,11 +246,17 @@ export class AquillaScene extends Phaser.Scene {
     this.redrawWorld();
     renderDebugOverlay(this.state);
     this.renderQuestState();
+    renderDialogueHud(this.activeDialogue);
   }
 
   private interact(): void {
     if (this.state.currentArea === "old-pasture") {
       this.interactOldPasture();
+      return;
+    }
+
+    if (this.isNear(BRIARFOLD_ELDER_POSITION)) {
+      this.openDialogue();
       return;
     }
 
@@ -296,6 +336,10 @@ export class AquillaScene extends Phaser.Scene {
       return this.isNear(OLD_PASTURE_WAYMARK_POSITION)
         ? "Press E: read the eastern waymark."
         : "Explore the old pasture. The road east is newly opened.";
+    }
+
+    if (this.isNear(BRIARFOLD_ELDER_POSITION)) {
+      return "Press E: speak with Elder Mara.";
     }
 
     const sheep = this.getNearbyLostSheep();
@@ -389,10 +433,26 @@ export class AquillaScene extends Phaser.Scene {
       return;
     }
 
+    this.drawBriarfoldElder(graphics);
     this.drawSheep(graphics);
     this.drawWaterRestoration(graphics);
     this.drawGuardian(graphics);
     this.drawFoldRestoration(graphics);
+  }
+
+  private drawBriarfoldElder(graphics: Phaser.GameObjects.Graphics): void {
+    const x = BRIARFOLD_ELDER_POSITION.x * TILE_SIZE + 8;
+    const y = BRIARFOLD_ELDER_POSITION.y * TILE_SIZE - 2;
+
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+    graphics.fillRect(x + 4, y + 4, 12, 24);
+    graphics.fillRect(x + 1, y + 15, 18, 12);
+    graphics.fillStyle(hexToNumber("#d8cab0"), 1);
+    graphics.fillRect(x + 6, y, 8, 8);
+    graphics.fillStyle(hexToNumber("#7d5230"), 1);
+    graphics.fillRect(x + 5, y + 8, 10, 18);
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.trueLight), 1);
+    graphics.fillRect(x + 8, y + 11, 4, 12);
   }
 
   private drawSheep(graphics: Phaser.GameObjects.Graphics): void {
@@ -485,6 +545,16 @@ export class AquillaScene extends Phaser.Scene {
 
   private getWorldMap(): WorldMap {
     return AREA_WORLD_MAPS[this.state.currentArea];
+  }
+
+  private openDialogue(): void {
+    this.activeDialogue = createDialogueSession(BRIARFOLD_ELDER_DIALOGUE);
+    renderDialogueHud(this.activeDialogue);
+  }
+
+  private closeDialogue(): void {
+    this.activeDialogue = undefined;
+    renderDialogueHud();
   }
 
   private drawHud(graphics: Phaser.GameObjects.Graphics): void {
