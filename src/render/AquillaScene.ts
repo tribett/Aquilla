@@ -8,6 +8,7 @@ import { commandDog, herdNearestSheep, herdSheepById } from "../game/dog";
 import { restoreFoldIfReady } from "../game/dungeon";
 import { resolveEncounter } from "../game/encounters";
 import { movePlayer } from "../game/movement";
+import { clearGameSave, loadGameSave, saveGame } from "../game/save";
 import { useStaffOnObject } from "../game/staff";
 import type { DialogueSession } from "../game/dialogue";
 import type { AreaId, Direction, Encounter, GameState, Interactable, Sheep, Vector2, WorldMap } from "../game/types";
@@ -45,6 +46,7 @@ const ARROW_DIRECTIONS: Partial<Record<string, Direction>> = {
   ArrowRight: "right",
   ArrowUp: "up",
 };
+const INITIAL_QUEST_MESSAGE = "Seek the scattered sheep, restore the spring, and make the Fold ready.";
 
 interface PlayerMovementAnimation {
   durationMs: number;
@@ -97,13 +99,14 @@ export class AquillaScene extends Phaser.Scene {
   private graphics?: Phaser.GameObjects.Graphics;
   private activeDialogue?: DialogueSession;
   private playerMovement?: PlayerMovementAnimation;
-  private questMessage = "Seek the scattered sheep, restore the spring, and make the Fold ready.";
+  private questMessage = INITIAL_QUEST_MESSAGE;
 
   constructor() {
     super("AquillaScene");
   }
 
   create(): void {
+    this.restoreSavedGame();
     this.cameras.main.setBackgroundColor(AQUILLA_ART.palette.grassBase);
     this.graphics = this.add.graphics();
     this.redrawWorld();
@@ -198,6 +201,9 @@ export class AquillaScene extends Phaser.Scene {
         this.state = commandDog(this.state, "distract");
         this.refreshScene();
         return true;
+      case "n":
+        this.resetGame();
+        return true;
       case " ":
       case "e":
         this.interact();
@@ -253,6 +259,7 @@ export class AquillaScene extends Phaser.Scene {
     renderDebugOverlay(this.state);
     this.renderQuestState();
     renderDialogueHud(this.activeDialogue);
+    this.persistGame();
   }
 
   private interact(): void {
@@ -607,6 +614,54 @@ export class AquillaScene extends Phaser.Scene {
   private closeDialogue(): void {
     this.activeDialogue = undefined;
     renderDialogueHud();
+  }
+
+  private persistGame(): void {
+    saveGame(window.localStorage, {
+      fearEcho: this.fearEcho,
+      guardian: this.guardian,
+      questMessage: this.questMessage,
+      state: this.state,
+      version: 1,
+      waterChannel: this.waterChannel,
+    });
+  }
+
+  private restoreSavedGame(): void {
+    const savedGame = loadGameSave(window.localStorage);
+
+    if (!savedGame) return;
+
+    this.state = savedGame.state;
+    this.guardian = savedGame.guardian;
+    this.fearEcho = savedGame.fearEcho;
+    this.waterChannel = savedGame.waterChannel;
+    this.questMessage = savedGame.questMessage;
+  }
+
+  private resetGame(): void {
+    clearGameSave(window.localStorage);
+    this.activeDialogue = undefined;
+    this.playerMovement = undefined;
+    this.state = createInitialState();
+    this.guardian = {
+      id: "fold-guardian",
+      kind: "corrupted-guardian",
+      state: "hostile",
+    };
+    this.fearEcho = {
+      id: "old-pasture-fear-echo",
+      kind: "fear-echo",
+      state: "hostile",
+    };
+    this.waterChannel = {
+      id: "dry-channel",
+      kind: "water-channel",
+      active: false,
+    };
+    this.questMessage = INITIAL_QUEST_MESSAGE;
+    this.refreshScene();
+    clearGameSave(window.localStorage);
   }
 
   private drawHud(graphics: Phaser.GameObjects.Graphics): void {
