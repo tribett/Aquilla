@@ -25,10 +25,13 @@ export function createInitialState(): GameState {
     ],
     inventory: ["shepherd-staff"],
     objectives: {
+      creedBeaconsLit: 0,
       fearEchoCalmed: false,
       foldRestored: false,
       gatheredSheep: 0,
       guardianCalmed: false,
+      lanternRuinsRestored: false,
+      requiredCreedBeacons: 3,
       requiredSheep: 3,
       waterRestored: false,
     },

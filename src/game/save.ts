@@ -1,13 +1,13 @@
 import type { Encounter, GameState, Interactable } from "./types";
 
-export const AQUILLA_SAVE_KEY = "aquilla.save.v1";
+export const AQUILLA_SAVE_KEY = "aquilla.save.v2";
 
 export interface GameSaveSnapshot {
   fearEcho: Encounter;
   guardian: Encounter;
   questMessage: string;
   state: GameState;
-  version: 1;
+  version: 2;
   waterChannel: Interactable;
 }
 
@@ -37,7 +37,7 @@ export function clearGameSave(storage: Storage): void {
 
 function isValidSaveSnapshot(value: Partial<GameSaveSnapshot>): value is GameSaveSnapshot {
   return (
-    value.version === 1 &&
+    value.version === 2 &&
     typeof value.questMessage === "string" &&
     Boolean(value.state?.player?.position) &&
     Boolean(value.state?.dog?.position) &&

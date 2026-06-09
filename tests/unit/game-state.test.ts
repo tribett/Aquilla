@@ -14,10 +14,13 @@ describe("createInitialState", () => {
     expect(state.inventory).toContain("shepherd-staff");
     expect(state.dog.style).toBe("border-collie");
     expect(state.objectives).toEqual({
+      creedBeaconsLit: 0,
       fearEchoCalmed: false,
       foldRestored: false,
       gatheredSheep: 0,
       guardianCalmed: false,
+      lanternRuinsRestored: false,
+      requiredCreedBeacons: 3,
       requiredSheep: 3,
       waterRestored: false,
     });

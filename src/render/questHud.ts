@@ -10,6 +10,7 @@ export interface QuestHudState {
 const AREA_LABELS: Record<AreaId, string> = {
   briarfold: "Briarfold",
   "fold-of-the-lost": "Fold of the Lost",
+  "lantern-ruins": "Lantern Ruins",
   "old-pasture": "Old Pasture",
 };
 
@@ -27,17 +28,20 @@ function renderObjectiveText(objectives: Objectives): void {
   const guardian = objectives.guardianCalmed ? "Guardian calmed" : "Guardian hostile";
   const fold = objectives.foldRestored ? "Fold restored" : "Fold lost";
   const fear = objectives.fearEchoCalmed ? "Fear echo calmed" : "Fear echo restless";
+  const creed = `Creed beacons ${objectives.creedBeaconsLit}/${objectives.requiredCreedBeacons}`;
 
   updateText("#objective-sheep", sheep);
   updateText("#objective-water", water);
   updateText("#objective-guardian", guardian);
   updateText("#objective-fold", fold);
   updateText("#objective-fear", fear);
+  updateText("#objective-creed", creed);
   updateText("#journal-objective-sheep", sheep);
   updateText("#journal-objective-water", water);
   updateText("#journal-objective-guardian", guardian);
   updateText("#journal-objective-fold", fold);
   updateText("#journal-objective-fear", fear);
+  updateText("#journal-objective-creed", creed);
 }
 
 export function isJournalOpen(): boolean {

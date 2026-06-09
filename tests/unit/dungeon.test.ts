@@ -16,14 +16,13 @@ describe("Fold of the Lost progression", () => {
   });
 
   it("restores the fold when all required mercy objectives are complete", () => {
+    const initialState = createInitialState();
     const state = {
-      ...createInitialState(),
+      ...initialState,
       objectives: {
-        fearEchoCalmed: false,
-        foldRestored: false,
+        ...initialState.objectives,
         gatheredSheep: 3,
         guardianCalmed: true,
-        requiredSheep: 3,
         waterRestored: true,
       },
     };

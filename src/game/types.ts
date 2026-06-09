@@ -1,4 +1,4 @@
-export type AreaId = "briarfold" | "old-pasture" | "fold-of-the-lost";
+export type AreaId = "briarfold" | "old-pasture" | "lantern-ruins" | "fold-of-the-lost";
 
 export type Direction = "up" | "down" | "left" | "right";
 
@@ -32,10 +32,13 @@ export interface Sheep extends Actor {
 }
 
 export interface Objectives {
+  creedBeaconsLit: number;
   fearEchoCalmed: boolean;
   foldRestored: boolean;
   gatheredSheep: number;
   guardianCalmed: boolean;
+  lanternRuinsRestored: boolean;
+  requiredCreedBeacons: number;
   requiredSheep: number;
   waterRestored: boolean;
 }

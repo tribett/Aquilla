@@ -1,8 +1,15 @@
 import Phaser from "phaser";
 import { AQUILLA_ART } from "../art/aquillaArt";
 import { drawPixelAsset, drawTileScene, hexToNumber } from "../art/pixelRenderer";
-import { enterOldPastureIfReady } from "../game/areas";
+import { enterLanternRuinsIfReady, enterOldPastureIfReady } from "../game/areas";
 import { createInitialState } from "../game/createInitialState";
+import {
+  CREED_BEACON_ORDER,
+  getCreedBeaconLabel,
+  getNextCreedBeaconId,
+  lightCreedBeacon,
+  type CreedBeaconId,
+} from "../game/creedBeacons";
 import { advanceDialogue, BRIARFOLD_ELDER_DIALOGUE, createDialogueSession } from "../game/dialogue";
 import { commandDog, herdNearestSheep, herdSheepById } from "../game/dog";
 import { restoreFoldIfReady } from "../game/dungeon";
@@ -30,14 +37,21 @@ const GUARDIAN_POSITION: Vector2 = { x: 11, y: 5 };
 const WATER_CHANNEL_POSITION: Vector2 = { x: 7, y: 10 };
 const OLD_PASTURE_FEAR_ECHO_POSITION: Vector2 = { x: 6, y: 6 };
 const OLD_PASTURE_WAYMARK_POSITION: Vector2 = { x: 16, y: 6 };
+const LANTERN_RUINS_BEACON_POSITIONS: Record<CreedBeaconId, Vector2> = {
+  giver: { x: 15, y: 5 },
+  maker: { x: 5, y: 5 },
+  redeemer: { x: 10, y: 5 },
+};
 const AREA_SCENE_MAPS: Record<AreaId, readonly string[]> = {
   briarfold: AQUILLA_ART.sceneMap,
   "fold-of-the-lost": AQUILLA_ART.sceneMap,
+  "lantern-ruins": AQUILLA_ART.lanternRuinsSceneMap,
   "old-pasture": AQUILLA_ART.oldPastureSceneMap,
 };
 const AREA_WORLD_MAPS: Record<AreaId, WorldMap> = {
   briarfold: PROTOTYPE_MAP,
   "fold-of-the-lost": PROTOTYPE_MAP,
+  "lantern-ruins": buildWorldMapFromScene(AQUILLA_ART.lanternRuinsSceneMap),
   "old-pasture": buildWorldMapFromScene(AQUILLA_ART.oldPastureSceneMap),
 };
 const ARROW_DIRECTIONS: Partial<Record<string, Direction>> = {
@@ -268,6 +282,11 @@ export class AquillaScene extends Phaser.Scene {
       return;
     }
 
+    if (this.state.currentArea === "lantern-ruins") {
+      this.interactLanternRuins();
+      return;
+    }
+
     if (this.isNear(BRIARFOLD_ELDER_POSITION)) {
       this.openDialogue();
       return;
@@ -342,9 +361,37 @@ export class AquillaScene extends Phaser.Scene {
       return;
     }
 
-    this.questMessage = this.isNear(OLD_PASTURE_WAYMARK_POSITION)
-      ? "The eastern waymark names Elarion's road: gather, guard, restore."
-      : "Briarfold lies behind you, restored; the old pasture opens toward the wider kingdom.";
+    if (this.isNear(OLD_PASTURE_WAYMARK_POSITION)) {
+      if (this.state.objectives.fearEchoCalmed) {
+        this.playerMovement = undefined;
+        this.state = enterLanternRuinsIfReady(this.state);
+        this.questMessage = "The eastern waymark opens into the Lantern Ruins, where true light is received in order.";
+      } else {
+        this.questMessage = "The eastern waymark names Elarion's road: gather, guard, restore.";
+      }
+
+      this.refreshScene();
+      return;
+    }
+
+    this.questMessage = "Briarfold lies behind you, restored; the old pasture opens toward the wider kingdom.";
+    this.refreshScene();
+  }
+
+  private interactLanternRuins(): void {
+    const beacon = this.getNearbyCreedBeacon();
+
+    if (beacon) {
+      const result = lightCreedBeacon(this.state, beacon);
+      this.state = result.state;
+      this.questMessage = result.message;
+      this.refreshScene();
+      return;
+    }
+
+    this.questMessage = this.state.objectives.lanternRuinsRestored
+      ? "The Lantern Ruins shine together: Maker, Redeemer, and Giver."
+      : "Follow the ruined path and light the creed beacons in order.";
     this.refreshScene();
   }
 
@@ -358,6 +405,33 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private getQuestPrompt(): string {
+    if (this.state.currentArea === "lantern-ruins") {
+      if (this.state.objectives.lanternRuinsRestored) {
+        return "The creed beacons burn together with received light.";
+      }
+
+      const beacon = this.getNearbyCreedBeacon();
+      const nextBeacon = getNextCreedBeaconId(this.state);
+
+      if (!beacon) {
+        return "Follow the ruined path and light the creed beacons in order.";
+      }
+
+      const beaconLabel = getCreedBeaconLabel(beacon);
+
+      if (beacon === nextBeacon) {
+        return `Press E: light the ${beaconLabel} beacon.`;
+      }
+
+      if (CREED_BEACON_ORDER.indexOf(beacon) < this.state.objectives.creedBeaconsLit) {
+        return `The ${beaconLabel} beacon is lit.`;
+      }
+
+      return nextBeacon
+        ? `The ${beaconLabel} beacon waits for the ${getCreedBeaconLabel(nextBeacon)} beacon.`
+        : `The ${beaconLabel} beacon waits.`;
+    }
+
     if (this.state.currentArea === "old-pasture") {
       if (this.isNear(OLD_PASTURE_FEAR_ECHO_POSITION)) {
         if (this.state.objectives.fearEchoCalmed) {
@@ -369,9 +443,13 @@ export class AquillaScene extends Phaser.Scene {
           : "Press E: steady the fear echo with the staff.";
       }
 
-      return this.isNear(OLD_PASTURE_WAYMARK_POSITION)
-        ? "Press E: read the eastern waymark."
-        : "Explore the old pasture. The road east is newly opened.";
+      if (this.isNear(OLD_PASTURE_WAYMARK_POSITION)) {
+        return this.state.objectives.fearEchoCalmed
+          ? "Press E: enter the Lantern Ruins."
+          : "Press E: read the eastern waymark.";
+      }
+
+      return "Explore the old pasture. The road east is newly opened.";
     }
 
     if (this.isNear(BRIARFOLD_ELDER_POSITION)) {
@@ -410,6 +488,10 @@ export class AquillaScene extends Phaser.Scene {
 
   private isNear(position: Vector2): boolean {
     return distanceBetween(this.state.player.position, position) <= INTERACTION_RANGE;
+  }
+
+  private getNearbyCreedBeacon(): CreedBeaconId | undefined {
+    return CREED_BEACON_ORDER.find((beacon) => this.isNear(LANTERN_RUINS_BEACON_POSITIONS[beacon]));
   }
 
   private redrawWorld(): void {
@@ -467,6 +549,11 @@ export class AquillaScene extends Phaser.Scene {
     if (this.state.currentArea === "old-pasture") {
       this.drawFearEcho(graphics);
       this.drawOldPastureWaymark(graphics);
+      return;
+    }
+
+    if (this.state.currentArea === "lantern-ruins") {
+      this.drawCreedBeacons(graphics);
       return;
     }
 
@@ -598,6 +685,39 @@ export class AquillaScene extends Phaser.Scene {
     graphics.fillRect(x + 13, y + 6, 2, 2);
   }
 
+  private drawCreedBeacons(graphics: Phaser.GameObjects.Graphics): void {
+    CREED_BEACON_ORDER.forEach((beacon, index) => {
+      const position = LANTERN_RUINS_BEACON_POSITIONS[beacon];
+      const x = position.x * TILE_SIZE + 8;
+      const y = position.y * TILE_SIZE + 2;
+      const lit = index < this.state.objectives.creedBeaconsLit;
+      const waiting = index === this.state.objectives.creedBeaconsLit;
+      const lightColor = lit
+        ? AQUILLA_ART.palette.trueLight
+        : waiting
+          ? AQUILLA_ART.palette.falseLight
+          : AQUILLA_ART.palette.falseLightFringe;
+
+      graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+      graphics.fillRect(x + 2, y + 8, 14, 22);
+      graphics.fillRect(x, y + 26, 18, 5);
+      graphics.fillStyle(hexToNumber("#7d745a"), 1);
+      graphics.fillRect(x + 4, y + 12, 10, 16);
+      graphics.fillStyle(hexToNumber(lightColor), lit ? 0.95 : 0.58);
+      graphics.fillRect(x + 5, y + 2, 8, 8);
+      graphics.fillRect(x + 7, y, 4, 14);
+      graphics.fillStyle(hexToNumber(lit ? AQUILLA_ART.palette.trueLightHighlight : "#241a12"), 1);
+      graphics.fillRect(x + 8, y + 4, 2, 2);
+    });
+
+    if (!this.state.objectives.lanternRuinsRestored) return;
+
+    graphics.lineStyle(4, hexToNumber(AQUILLA_ART.palette.trueLight), 0.86);
+    graphics.strokeRect(4 * TILE_SIZE, 4 * TILE_SIZE, 13 * TILE_SIZE, 3 * TILE_SIZE);
+    graphics.lineStyle(2, hexToNumber(AQUILLA_ART.palette.trueLightHighlight), 0.92);
+    graphics.strokeRect(4 * TILE_SIZE + 8, 4 * TILE_SIZE + 8, 13 * TILE_SIZE - 16, 3 * TILE_SIZE - 16);
+  }
+
   private getSceneMap(): readonly string[] {
     return AREA_SCENE_MAPS[this.state.currentArea];
   }
@@ -622,7 +742,7 @@ export class AquillaScene extends Phaser.Scene {
       guardian: this.guardian,
       questMessage: this.questMessage,
       state: this.state,
-      version: 1,
+      version: 2,
       waterChannel: this.waterChannel,
     });
   }

@@ -27,6 +27,8 @@ export function renderDebugOverlay(state: GameState): void {
     `Guardian ${state.objectives.guardianCalmed ? "calmed" : "hostile"}`,
     `Fold ${state.objectives.foldRestored ? "restored" : "lost"}`,
     `FearEcho ${state.objectives.fearEchoCalmed ? "calmed" : "restless"}`,
+    `Creed ${state.objectives.creedBeaconsLit}/${state.objectives.requiredCreedBeacons}`,
+    `Ruins ${state.objectives.lanternRuinsRestored ? "restored" : "waiting"}`,
     `Light ${AQUILLA_ART.palette.trueLight} / ${AQUILLA_ART.palette.falseLight}`,
   ].join("\n");
 }
