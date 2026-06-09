@@ -33,6 +33,7 @@ export function renderDebugOverlay(state: GameState): void {
     `Ruins ${state.objectives.lanternRuinsRestored ? "restored" : "waiting"}`,
     `Sanctum ${state.objectives.sanctumWitnessSteps}/${state.objectives.requiredSanctumWitnessSteps}`,
     `Thorns ${state.objectives.thornSnaresCleared}/${state.objectives.requiredThornSnares}`,
+    `Grove ${state.objectives.hiddenGroveFound ? "found" : "hidden"}`,
     `ShepherdGate ${isShepherdGateOpen(state) ? "open" : "closed"}`,
     ...state.creatures.map(
       (creature) => `Prowler ${creature.state} ${creature.position.x},${creature.position.y}`,

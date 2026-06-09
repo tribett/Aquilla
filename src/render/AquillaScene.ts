@@ -26,6 +26,12 @@ import {
 } from "../game/sanctum";
 import { clearGameSave, loadGameSave, saveGame } from "../game/save";
 import {
+  canTrackOldPastureScent,
+  HIDDEN_GROVE_POSITION,
+  OLD_PASTURE_SCENT_START,
+  trackOldPastureScent,
+} from "../game/scentTrail";
+import {
   isShepherdGateOpen,
   sendDogToShepherdGatePlate,
   SHEPHERD_GATE_PLATE_POSITION,
@@ -348,11 +354,14 @@ export class AquillaScene extends Phaser.Scene {
       this.state.currentArea === "briarfold" &&
       !isShepherdGateOpen(this.state) &&
       this.isNearShepherdGate();
+    const tracksScent = canTrackOldPastureScent(this.state);
     const dogFrom = this.getRenderedDogTilePosition();
     const previousDogPosition = this.state.dog.position;
     const nextState = fetchesGatePlate
       ? sendDogToShepherdGatePlate(this.state)
-      : fetchNearestLostSheep(this.state);
+      : tracksScent
+        ? trackOldPastureScent(this.state)
+        : fetchNearestLostSheep(this.state);
     const nextDogPosition = nextState.dog.position;
     this.state = nextState;
 
@@ -375,9 +384,11 @@ export class AquillaScene extends Phaser.Scene {
     );
     this.questMessage = fetchesGatePlate
       ? "The sheepdog runs back to the old pressure plate by the Shepherd's Gate."
-      : fetchedSheep
-        ? `The sheepdog runs ahead toward ${fetchedSheep.name}.`
-        : "The sheepdog searches, but no lost sheep remain in this pasture.";
+      : tracksScent
+        ? "The sheepdog lowers its nose and follows the old scent into a hidden grove."
+        : fetchedSheep
+          ? `The sheepdog runs ahead toward ${fetchedSheep.name}.`
+          : "The sheepdog searches, but no lost sheep remain in this pasture.";
     this.refreshScene();
   }
 
@@ -668,6 +679,14 @@ export class AquillaScene extends Phaser.Scene {
           : "Press E: read the eastern waymark.";
       }
 
+      if (canTrackOldPastureScent(this.state)) {
+        return "Press F: ask the sheepdog to track the old scent.";
+      }
+
+      if (this.state.objectives.hiddenGroveFound && this.isNear(HIDDEN_GROVE_POSITION)) {
+        return "The hidden grove remembers mercy in quiet growth.";
+      }
+
       return "Explore the old pasture. The road east is newly opened.";
     }
 
@@ -822,6 +841,7 @@ export class AquillaScene extends Phaser.Scene {
 
   private drawObjectiveWorldState(graphics: Phaser.GameObjects.Graphics): void {
     if (this.state.currentArea === "old-pasture") {
+      this.drawOldPastureScentTrail(graphics);
       this.drawFearEcho(graphics);
       this.drawOldPastureWaymark(graphics);
       return;
@@ -1025,6 +1045,40 @@ export class AquillaScene extends Phaser.Scene {
     graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.trueLightHighlight), 1);
     graphics.fillRect(x + 5, y, 6, 6);
     graphics.fillRect(x + 4, y + 10, 8, 2);
+  }
+
+  private drawOldPastureScentTrail(graphics: Phaser.GameObjects.Graphics): void {
+    const trailPositions = [
+      OLD_PASTURE_SCENT_START,
+      { x: 3, y: 10 },
+      HIDDEN_GROVE_POSITION,
+    ];
+
+    trailPositions.forEach((position, index) => {
+      const x = position.x * TILE_SIZE + 11;
+      const y = position.y * TILE_SIZE + 14;
+      const discovered = this.state.objectives.hiddenGroveFound;
+
+      graphics.fillStyle(
+        hexToNumber(discovered ? AQUILLA_ART.palette.trueLight : AQUILLA_ART.palette.falseLight),
+        discovered ? 0.72 : 0.34,
+      );
+      graphics.fillRect(x + index, y, 6, 3);
+      graphics.fillRect(x + 2 + index, y + 5, 4, 2);
+    });
+
+    if (!this.state.objectives.hiddenGroveFound) return;
+
+    const groveX = HIDDEN_GROVE_POSITION.x * TILE_SIZE + 4;
+    const groveY = HIDDEN_GROVE_POSITION.y * TILE_SIZE + 1;
+
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+    graphics.fillRect(groveX + 5, groveY + 8, 18, 18);
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.trueLight), 0.9);
+    graphics.fillRect(groveX + 7, groveY + 4, 14, 18);
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.trueLightHighlight), 1);
+    graphics.fillRect(groveX + 11, groveY, 6, 6);
+    graphics.fillRect(groveX + 9, groveY + 12, 10, 3);
   }
 
   private drawFearEcho(graphics: Phaser.GameObjects.Graphics): void {

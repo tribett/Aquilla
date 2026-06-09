@@ -61,6 +61,7 @@ export interface Objectives {
   gameComplete: boolean;
   gatheredSheep: number;
   guardianCalmed: boolean;
+  hiddenGroveFound: boolean;
   lanternRuinsRestored: boolean;
   requiredCreedBeacons: number;
   requiredSanctumWitnessSteps: number;
