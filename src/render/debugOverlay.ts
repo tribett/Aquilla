@@ -19,6 +19,7 @@ export function renderDebugOverlay(state: GameState): void {
 
   overlay.textContent = [
     `Art Bible ${AQUILLA_ART.direction.world} - ${AQUILLA_ART.direction.tone}`,
+    `Area ${state.currentArea}`,
     `Aquilla ${state.player.position.x},${state.player.position.y}`,
     `Dog ${state.dog.command} ${state.dog.position.x},${state.dog.position.y}`,
     `Sheep ${state.objectives.gatheredSheep}/${state.objectives.requiredSheep}`,

@@ -89,6 +89,7 @@ test("loads Aquilla and renders a nonblank game canvas", async ({ page }) => {
   await expect(page.getByText("Arrow keys")).toBeVisible();
   await expect(page.getByText("E interact")).toBeVisible();
   await expect(page.locator("#quest-prompt")).toContainText("Move near");
+  await expect(page.locator("#area-label")).toContainText("Area: Briarfold");
   await expect(page.locator("#objective-sheep")).toContainText("Lost sheep 0/3");
   await expect(page.locator("#objective-water")).toContainText("Spring dry");
   await expect(page.locator("#objective-guardian")).toContainText("Guardian hostile");

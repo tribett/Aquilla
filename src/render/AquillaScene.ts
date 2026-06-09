@@ -1,13 +1,14 @@
 import Phaser from "phaser";
 import { AQUILLA_ART } from "../art/aquillaArt";
 import { drawPixelAsset, drawTileScene, hexToNumber } from "../art/pixelRenderer";
+import { enterOldPastureIfReady } from "../game/areas";
 import { createInitialState } from "../game/createInitialState";
 import { commandDog, herdNearestSheep, herdSheepById } from "../game/dog";
 import { restoreFoldIfReady } from "../game/dungeon";
 import { resolveEncounter } from "../game/encounters";
 import { movePlayer } from "../game/movement";
 import { useStaffOnObject } from "../game/staff";
-import type { Direction, Encounter, GameState, Interactable, Sheep, Vector2 } from "../game/types";
+import type { AreaId, Direction, Encounter, GameState, Interactable, Sheep, Vector2, WorldMap } from "../game/types";
 import { renderDebugOverlay } from "./debugOverlay";
 import { isJournalOpen, renderQuestHud, setJournalOpen, toggleJournal } from "./questHud";
 import { buildWorldMapFromScene } from "./worldMap";
@@ -22,6 +23,17 @@ const PROTOTYPE_MAP = buildWorldMapFromScene(AQUILLA_ART.sceneMap);
 const FOLD_POSITION: Vector2 = { x: 17, y: 7 };
 const GUARDIAN_POSITION: Vector2 = { x: 11, y: 5 };
 const WATER_CHANNEL_POSITION: Vector2 = { x: 7, y: 10 };
+const OLD_PASTURE_WAYMARK_POSITION: Vector2 = { x: 16, y: 6 };
+const AREA_SCENE_MAPS: Record<AreaId, readonly string[]> = {
+  briarfold: AQUILLA_ART.sceneMap,
+  "fold-of-the-lost": AQUILLA_ART.sceneMap,
+  "old-pasture": AQUILLA_ART.oldPastureSceneMap,
+};
+const AREA_WORLD_MAPS: Record<AreaId, WorldMap> = {
+  briarfold: PROTOTYPE_MAP,
+  "fold-of-the-lost": PROTOTYPE_MAP,
+  "old-pasture": buildWorldMapFromScene(AQUILLA_ART.oldPastureSceneMap),
+};
 const ARROW_DIRECTIONS: Partial<Record<string, Direction>> = {
   ArrowDown: "down",
   ArrowLeft: "left",
@@ -53,7 +65,7 @@ function getPlayerMoveDurationMs(): number {
     new URLSearchParams(window.location.search).get("motion"),
   );
 
-  if (Number.isFinite(requestedDuration) && requestedDuration >= 120 && requestedDuration <= 1_200) {
+  if (Number.isFinite(requestedDuration) && requestedDuration >= 120 && requestedDuration <= 4_000) {
     return requestedDuration;
   }
 
@@ -180,7 +192,7 @@ export class AquillaScene extends Phaser.Scene {
   private move(direction: Direction): void {
     const previousPosition = this.state.player.position;
     const renderedFrom = this.getRenderedPlayerTilePosition();
-    this.state = movePlayer(this.state, direction, PROTOTYPE_MAP);
+    this.state = movePlayer(this.state, direction, this.getWorldMap());
     const nextPosition = this.state.player.position;
     const moved = previousPosition.x !== nextPosition.x || previousPosition.y !== nextPosition.y;
 
@@ -203,6 +215,11 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private interact(): void {
+    if (this.state.currentArea === "old-pasture") {
+      this.interactOldPasture();
+      return;
+    }
+
     const sheep = this.getNearbyLostSheep();
     if (sheep) {
       this.state = herdSheepById(commandDog(this.state, "herd"), sheep.id);
@@ -236,6 +253,14 @@ export class AquillaScene extends Phaser.Scene {
     }
 
     if (this.isNear(FOLD_POSITION)) {
+      if (this.state.objectives.foldRestored) {
+        this.playerMovement = undefined;
+        this.state = enterOldPastureIfReady(this.state);
+        this.questMessage = "Briarfold lies behind you, restored; the old pasture opens toward the wider kingdom.";
+        this.refreshScene();
+        return;
+      }
+
       const nextState = restoreFoldIfReady(this.state);
       const restored = !this.state.objectives.foldRestored && nextState.objectives.foldRestored;
       this.state = nextState;
@@ -250,8 +275,16 @@ export class AquillaScene extends Phaser.Scene {
     this.refreshScene();
   }
 
+  private interactOldPasture(): void {
+    this.questMessage = this.isNear(OLD_PASTURE_WAYMARK_POSITION)
+      ? "The eastern waymark names Elarion's road: gather, guard, restore."
+      : "Briarfold lies behind you, restored; the old pasture opens toward the wider kingdom.";
+    this.refreshScene();
+  }
+
   private renderQuestState(): void {
     renderQuestHud({
+      currentArea: this.state.currentArea,
       message: this.questMessage,
       objectives: this.state.objectives,
       prompt: this.getQuestPrompt(),
@@ -259,6 +292,12 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private getQuestPrompt(): string {
+    if (this.state.currentArea === "old-pasture") {
+      return this.isNear(OLD_PASTURE_WAYMARK_POSITION)
+        ? "Press E: read the eastern waymark."
+        : "Explore the old pasture. The road east is newly opened.";
+    }
+
     const sheep = this.getNearbyLostSheep();
     if (sheep) {
       return `Press E: ask the sheepdog to guide ${sheep.name}.`;
@@ -306,7 +345,7 @@ export class AquillaScene extends Phaser.Scene {
     graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.grassBase), 1);
     graphics.fillRect(0, 0, SCENE_WIDTH, 480);
 
-    drawTileScene(graphics, AQUILLA_ART.sceneMap, AQUILLA_ART.tiles, 0, 0, PIXEL_SCALE);
+    drawTileScene(graphics, this.getSceneMap(), AQUILLA_ART.tiles, 0, 0, PIXEL_SCALE);
 
     this.drawObjectiveWorldState(graphics);
 
@@ -345,6 +384,11 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private drawObjectiveWorldState(graphics: Phaser.GameObjects.Graphics): void {
+    if (this.state.currentArea === "old-pasture") {
+      this.drawOldPastureWaymark(graphics);
+      return;
+    }
+
     this.drawSheep(graphics);
     this.drawWaterRestoration(graphics);
     this.drawGuardian(graphics);
@@ -420,6 +464,27 @@ export class AquillaScene extends Phaser.Scene {
     graphics.strokeRect(x - 4, y - 4, TILE_SIZE + 8, TILE_SIZE + 8);
     graphics.lineStyle(2, hexToNumber(AQUILLA_ART.palette.trueLightHighlight), 1);
     graphics.strokeRect(x + 3, y + 3, TILE_SIZE - 6, TILE_SIZE - 6);
+  }
+
+  private drawOldPastureWaymark(graphics: Phaser.GameObjects.Graphics): void {
+    const x = OLD_PASTURE_WAYMARK_POSITION.x * TILE_SIZE + 8;
+    const y = OLD_PASTURE_WAYMARK_POSITION.y * TILE_SIZE + 2;
+
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+    graphics.fillRect(x, y + 7, 16, 22);
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.trueLight), 1);
+    graphics.fillRect(x + 2, y + 4, 12, 17);
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.trueLightHighlight), 1);
+    graphics.fillRect(x + 5, y, 6, 6);
+    graphics.fillRect(x + 4, y + 10, 8, 2);
+  }
+
+  private getSceneMap(): readonly string[] {
+    return AREA_SCENE_MAPS[this.state.currentArea];
+  }
+
+  private getWorldMap(): WorldMap {
+    return AREA_WORLD_MAPS[this.state.currentArea];
   }
 
   private drawHud(graphics: Phaser.GameObjects.Graphics): void {

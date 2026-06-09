@@ -33,15 +33,15 @@ test("moves Aquilla right with the keyboard and refreshes debug state", async ({
 });
 
 test("animates Aquilla between tiles instead of jumping instantly", async ({ page }) => {
-  await page.goto("/?motion=900");
+  await page.goto("/?motion=3000");
 
   const start = await canvasSignature(page);
 
   await page.keyboard.press("ArrowRight");
-  await page.waitForTimeout(180);
+  await page.waitForTimeout(300);
   const midway = await canvasSignature(page);
 
-  await page.waitForTimeout(950);
+  await page.waitForTimeout(3200);
   const end = await canvasSignature(page);
 
   expect(midway).not.toBe(start);

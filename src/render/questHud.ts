@@ -1,10 +1,17 @@
-import type { Objectives } from "../game/types";
+import type { AreaId, Objectives } from "../game/types";
 
 export interface QuestHudState {
+  currentArea: AreaId;
   message: string;
   objectives: Objectives;
   prompt: string;
 }
+
+const AREA_LABELS: Record<AreaId, string> = {
+  briarfold: "Briarfold",
+  "fold-of-the-lost": "Fold of the Lost",
+  "old-pasture": "Old Pasture",
+};
 
 function updateText(selector: string, text: string): void {
   const element = document.querySelector<HTMLElement>(selector);
@@ -50,8 +57,13 @@ export function toggleJournal(): void {
 }
 
 export function renderQuestHud(state: QuestHudState): void {
+  const area = document.querySelector<HTMLParagraphElement>("#area-label");
   const prompt = document.querySelector<HTMLParagraphElement>("#quest-prompt");
   const message = document.querySelector<HTMLParagraphElement>("#quest-message");
+
+  if (area) {
+    area.textContent = `Area: ${AREA_LABELS[state.currentArea]}`;
+  }
 
   if (prompt) {
     prompt.textContent = state.prompt;

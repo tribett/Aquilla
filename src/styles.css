@@ -161,6 +161,13 @@ body {
   line-height: 1.35;
 }
 
+#area-label {
+  color: #e0a93a;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
 #quest-prompt {
   color: #f3d489;
   font-weight: 700;

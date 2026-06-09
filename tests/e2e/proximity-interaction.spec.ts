@@ -17,12 +17,14 @@ test("plays the Fold loop through proximity prompts and one interact key", async
   const questPrompt = page.locator("#quest-prompt");
   const questMessage = page.locator("#quest-message");
   const debugState = page.locator("#debug-state");
+  const areaLabel = page.locator("#area-label");
   const sheepObjective = page.locator("#objective-sheep");
   const waterObjective = page.locator("#objective-water");
   const guardianObjective = page.locator("#objective-guardian");
   const foldObjective = page.locator("#objective-fold");
 
   await expect(sheepObjective).toContainText("Lost sheep 0/3");
+  await expect(areaLabel).toContainText("Area: Briarfold");
   await expect(waterObjective).toContainText("Spring dry");
   await expect(guardianObjective).toContainText("Guardian hostile");
   await expect(foldObjective).toContainText("Fold lost");
@@ -68,4 +70,12 @@ test("plays the Fold loop through proximity prompts and one interact key", async
   await expect(debugState).toContainText("Fold restored");
   await expect(foldObjective).toContainText("Fold restored");
   await expect(questMessage).toContainText("Fold");
+
+  await page.keyboard.press("E");
+
+  await expect(debugState).toContainText("Area old-pasture");
+  await expect(debugState).toContainText("Aquilla 2,6");
+  await expect(areaLabel).toContainText("Area: Old Pasture");
+  await expect(questPrompt).toContainText("Explore the old pasture");
+  await expect(questMessage).toContainText("Briarfold lies behind");
 });
