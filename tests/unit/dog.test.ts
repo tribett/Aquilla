@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState } from "../../src/game/createInitialState";
-import { commandDog, herdNearestSheep } from "../../src/game/dog";
+import { commandDog, herdNearestSheep, herdSheepById } from "../../src/game/dog";
 
 describe("dog commands", () => {
   it("sets the sheepdog command", () => {
@@ -42,5 +42,15 @@ describe("dog commands", () => {
 
     expect(next.sheep.find((sheep) => sheep.id === "near-sheep")?.gathered).toBe(true);
     expect(next.sheep.find((sheep) => sheep.id === "far-sheep")?.gathered).toBe(false);
+  });
+
+  it("gathers a selected sheep by id for proximity interactions", () => {
+    const state = commandDog(createInitialState(), "herd");
+
+    const next = herdSheepById(state, "sheep-2");
+
+    expect(next.objectives.gatheredSheep).toBe(1);
+    expect(next.sheep.find((sheep) => sheep.id === "sheep-2")?.gathered).toBe(true);
+    expect(next.sheep.find((sheep) => sheep.id === "sheep-1")?.gathered).toBe(false);
   });
 });

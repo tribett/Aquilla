@@ -37,6 +37,22 @@ export function herdNearestSheep(state: GameState): GameState {
     return state;
   }
 
+  return herdSheepById(state, sheepToGather.id);
+}
+
+export function herdSheepById(state: GameState, sheepId: string): GameState {
+  if (state.dog.command !== "herd") {
+    return state;
+  }
+
+  const sheepToGather = state.sheep.find(
+    (candidate) => candidate.id === sheepId && !candidate.gathered,
+  );
+
+  if (!sheepToGather) {
+    return state;
+  }
+
   const sheep = state.sheep.map((candidate): Sheep => {
     if (candidate.id !== sheepToGather.id) {
       return candidate;

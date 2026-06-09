@@ -142,6 +142,28 @@ body {
   white-space: nowrap;
 }
 
+#quest-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px;
+  border: 1px solid rgba(224, 169, 58, 0.3);
+  border-radius: 6px;
+  background: rgba(20, 17, 12, 0.62);
+}
+
+#quest-panel p {
+  margin: 0;
+  color: #d8cab0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+#quest-prompt {
+  color: #f3d489;
+  font-weight: 700;
+}
+
 #game-root {
   width: 100%;
   height: 100%;

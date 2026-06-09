@@ -2,21 +2,26 @@ import Phaser from "phaser";
 import { AQUILLA_ART } from "../art/aquillaArt";
 import { drawPixelAsset, drawTileScene, hexToNumber } from "../art/pixelRenderer";
 import { createInitialState } from "../game/createInitialState";
-import { commandDog, herdNearestSheep } from "../game/dog";
+import { commandDog, herdNearestSheep, herdSheepById } from "../game/dog";
 import { restoreFoldIfReady } from "../game/dungeon";
 import { resolveEncounter } from "../game/encounters";
 import { movePlayer } from "../game/movement";
 import { useStaffOnObject } from "../game/staff";
-import type { Direction, Encounter, GameState, Interactable, Vector2 } from "../game/types";
+import type { Direction, Encounter, GameState, Interactable, Sheep, Vector2 } from "../game/types";
 import { renderDebugOverlay } from "./debugOverlay";
+import { renderQuestHud } from "./questHud";
 import { buildWorldMapFromScene } from "./worldMap";
 
 const PIXEL_SCALE = 2;
 const TILE_SIZE = 16 * PIXEL_SCALE;
 const SCENE_WIDTH = 20 * TILE_SIZE;
 const SCENE_HEIGHT = 13 * TILE_SIZE;
+const INTERACTION_RANGE = 1.5;
 const PLAYER_MOVE_DURATION_MS = 420;
 const PROTOTYPE_MAP = buildWorldMapFromScene(AQUILLA_ART.sceneMap);
+const FOLD_POSITION: Vector2 = { x: 17, y: 7 };
+const GUARDIAN_POSITION: Vector2 = { x: 11, y: 5 };
+const WATER_CHANNEL_POSITION: Vector2 = { x: 7, y: 10 };
 const ARROW_DIRECTIONS: Partial<Record<string, Direction>> = {
   ArrowDown: "down",
   ArrowLeft: "left",
@@ -39,6 +44,10 @@ function easeInOut(progress: number): number {
     : 1 - (-2 * boundedProgress + 2) ** 2 / 2;
 }
 
+function distanceBetween(first: Vector2, second: Vector2): number {
+  return Math.hypot(first.x - second.x, first.y - second.y);
+}
+
 export class AquillaScene extends Phaser.Scene {
   private state: GameState = createInitialState();
   private guardian: Encounter = {
@@ -53,6 +62,7 @@ export class AquillaScene extends Phaser.Scene {
   };
   private graphics?: Phaser.GameObjects.Graphics;
   private playerMovement?: PlayerMovementAnimation;
+  private questMessage = "Seek the scattered sheep, restore the spring, and make the Fold ready.";
 
   constructor() {
     super("AquillaScene");
@@ -64,6 +74,7 @@ export class AquillaScene extends Phaser.Scene {
     this.redrawWorld();
     this.registerKeyboardControls();
     renderDebugOverlay(this.state);
+    this.renderQuestState();
   }
 
   update(): void {
@@ -97,6 +108,10 @@ export class AquillaScene extends Phaser.Scene {
       case "d":
         this.state = commandDog(this.state, "distract");
         this.refreshScene();
+        return true;
+      case " ":
+      case "e":
+        this.interact();
         return true;
       case "g": {
         const result = resolveEncounter(this.state, this.guardian, "staff-calm");
@@ -147,6 +162,97 @@ export class AquillaScene extends Phaser.Scene {
   private refreshScene(): void {
     this.redrawWorld();
     renderDebugOverlay(this.state);
+    this.renderQuestState();
+  }
+
+  private interact(): void {
+    const sheep = this.getNearbyLostSheep();
+    if (sheep) {
+      this.state = herdSheepById(commandDog(this.state, "herd"), sheep.id);
+      this.questMessage = "The sheepdog guides a lost sheep gently toward the Fold.";
+      this.refreshScene();
+      return;
+    }
+
+    if (this.isNear(WATER_CHANNEL_POSITION) && !this.state.objectives.waterRestored) {
+      const result = useStaffOnObject(this.state, this.waterChannel);
+      this.state = result.state;
+      this.waterChannel = result.object;
+      this.questMessage = "The spring runs clear again; mercy makes a path through dry ground.";
+      this.refreshScene();
+      return;
+    }
+
+    if (this.isNear(GUARDIAN_POSITION) && !this.state.objectives.guardianCalmed) {
+      if (this.state.dog.command !== "distract") {
+        this.state = commandDog(this.state, "distract");
+        this.questMessage = "The sheepdog draws the guardian's gaze without striking it.";
+      } else {
+        const result = resolveEncounter(this.state, this.guardian, "staff-calm");
+        this.state = result.state;
+        this.guardian = result.encounter;
+        this.questMessage = "The guardian remembers its charge and lowers its head.";
+      }
+
+      this.refreshScene();
+      return;
+    }
+
+    if (this.isNear(FOLD_POSITION)) {
+      const nextState = restoreFoldIfReady(this.state);
+      const restored = !this.state.objectives.foldRestored && nextState.objectives.foldRestored;
+      this.state = nextState;
+      this.questMessage = restored
+        ? "The Fold opens as refuge, not as a reward earned."
+        : "The Fold waits until sheep, spring, and guardian are restored.";
+      this.refreshScene();
+      return;
+    }
+
+    this.questMessage = "Move near a sheep, the dry channel, the guardian, or the Fold.";
+    this.refreshScene();
+  }
+
+  private renderQuestState(): void {
+    renderQuestHud({
+      message: this.questMessage,
+      prompt: this.getQuestPrompt(),
+    });
+  }
+
+  private getQuestPrompt(): string {
+    const sheep = this.getNearbyLostSheep();
+    if (sheep) {
+      return `Press E: ask the sheepdog to guide ${sheep.name}.`;
+    }
+
+    if (this.isNear(WATER_CHANNEL_POSITION) && !this.state.objectives.waterRestored) {
+      return "Press E: use the Shepherd's Staff on the dry channel.";
+    }
+
+    if (this.isNear(GUARDIAN_POSITION) && !this.state.objectives.guardianCalmed) {
+      return this.state.dog.command === "distract"
+        ? "Press E: calm the guardian with the staff."
+        : "Press E: ask the sheepdog to distract the guardian.";
+    }
+
+    if (this.isNear(FOLD_POSITION)) {
+      return this.state.objectives.foldRestored
+        ? "The Fold is restored."
+        : "Press E: restore the Fold when mercy's work is ready.";
+    }
+
+    return "Move near sheep, springs, guardians, or the Fold. Press E to interact.";
+  }
+
+  private getNearbyLostSheep(): Sheep | undefined {
+    return this.state.sheep.find(
+      (sheep) => !sheep.gathered && this.isNear(sheep.position),
+    );
+  }
+
+  private isNear(position: Vector2): boolean {
+    return distanceBetween(this.state.player.position, position) <= INTERACTION_RANGE;
   }
 
   private redrawWorld(): void {

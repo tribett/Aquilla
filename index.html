@@ -20,12 +20,13 @@
           <h2>Controls</h2>
           <ul class="controls-list">
             <li><span class="control-copy">Arrow keys</span><span>move Aquilla</span></li>
-            <li><span class="control-copy">H herd</span><span>guide sheep</span></li>
-            <li><span class="control-copy">W water</span><span>restore spring</span></li>
-            <li><span class="control-copy">D distract</span><span>draw guardian</span></li>
-            <li><span class="control-copy">G calm</span><span>lower hostility</span></li>
-            <li><span class="control-copy">R restore fold</span><span>bring the lost home</span></li>
+            <li><span class="control-copy">E interact</span><span>respond to nearby prompts</span></li>
+            <li><span class="control-copy">Space</span><span>same as interact</span></li>
           </ul>
+          <div id="quest-panel" aria-live="polite">
+            <p id="quest-prompt">Move near the lost and press E.</p>
+            <p id="quest-message">Seek the scattered sheep, restore the spring, and make the Fold ready.</p>
+          </div>
         </aside>
         <div id="game-root" aria-label="Aquilla game canvas"></div>
       </section>
