@@ -11,7 +11,7 @@ import {
   type CreedBeaconId,
 } from "../game/creedBeacons";
 import { advanceDialogue, BRIARFOLD_ELDER_DIALOGUE, createDialogueSession } from "../game/dialogue";
-import { commandDog, herdNearestSheep, herdSheepById } from "../game/dog";
+import { commandDog, fetchNearestLostSheep, herdNearestSheep, herdSheepById, trailDogAfterPlayerMove } from "../game/dog";
 import { restoreFoldIfReady } from "../game/dungeon";
 import { resolveEncounter } from "../game/encounters";
 import { resolveHazardStep, restoreThornSnare } from "../game/hazards";
@@ -130,6 +130,7 @@ export class AquillaScene extends Phaser.Scene {
   private graphics?: Phaser.GameObjects.Graphics;
   private activeDialogue?: DialogueSession;
   private playerMovement?: PlayerMovementAnimation;
+  private dogMovement?: PlayerMovementAnimation;
   private questMessage = INITIAL_QUEST_MESSAGE;
 
   constructor() {
@@ -149,12 +150,22 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   update(): void {
-    if (!this.playerMovement) return;
+    if (!this.playerMovement && !this.dogMovement) return;
 
     this.redrawWorld();
 
-    if (Date.now() - this.playerMovement.startedAtMs >= this.playerMovement.durationMs) {
+    if (
+      this.playerMovement &&
+      Date.now() - this.playerMovement.startedAtMs >= this.playerMovement.durationMs
+    ) {
       this.playerMovement = undefined;
+    }
+
+    if (this.dogMovement && Date.now() - this.dogMovement.startedAtMs >= this.dogMovement.durationMs) {
+      this.dogMovement = undefined;
+    }
+
+    if (!this.playerMovement && !this.dogMovement) {
       this.redrawWorld();
     }
   }
@@ -232,8 +243,14 @@ export class AquillaScene extends Phaser.Scene {
         this.state = commandDog(this.state, "distract");
         this.refreshScene();
         return true;
+      case "f":
+        this.fetchWithDog();
+        return true;
       case "n":
         this.resetGame();
+        return true;
+      case "s":
+        this.toggleDogStay();
         return true;
       case " ":
       case "e":
@@ -269,19 +286,29 @@ export class AquillaScene extends Phaser.Scene {
   private move(direction: Direction): void {
     const previousPosition = this.state.player.position;
     const renderedFrom = this.getRenderedPlayerTilePosition();
+    const dogFrom = this.getRenderedDogTilePosition();
+    const previousDogPosition = this.state.dog.position;
     const movedState = movePlayer(this.state, direction, this.getWorldMap());
     const prowlerResult = resolveProwlerStep(movedState, previousPosition);
     const hazardResult = prowlerResult.message
       ? prowlerResult
       : resolveHazardStep(prowlerResult.state, previousPosition);
-    this.state = hazardResult.message ? hazardResult.state : advanceProwlers(hazardResult.state);
+    const stateAfterDogMovement = hazardResult.message
+      ? hazardResult.state
+      : trailDogAfterPlayerMove(hazardResult.state, previousPosition);
+    this.state = hazardResult.message ? stateAfterDogMovement : advanceProwlers(stateAfterDogMovement);
     const nextPosition = this.state.player.position;
+    const nextDogPosition = this.state.dog.position;
     const moved =
       previousPosition.x !== nextPosition.x ||
       previousPosition.y !== nextPosition.y;
+    const dogMoved =
+      previousDogPosition.x !== nextDogPosition.x ||
+      previousDogPosition.y !== nextDogPosition.y;
 
     if (hazardResult.message) {
       this.playerMovement = undefined;
+      this.dogMovement = undefined;
       this.questMessage = hazardResult.message;
     } else if (moved) {
       this.playerMovement = {
@@ -290,10 +317,60 @@ export class AquillaScene extends Phaser.Scene {
         startedAtMs: Date.now(),
         to: nextPosition,
       };
+
+      if (dogMoved) {
+        this.dogMovement = {
+          durationMs: getPlayerMoveDurationMs(),
+          from: dogFrom,
+          startedAtMs: Date.now(),
+          to: nextDogPosition,
+        };
+      } else {
+        this.dogMovement = undefined;
+      }
     } else {
       this.playerMovement = undefined;
+      this.dogMovement = undefined;
     }
 
+    this.refreshScene();
+  }
+
+  private fetchWithDog(): void {
+    const dogFrom = this.getRenderedDogTilePosition();
+    const previousDogPosition = this.state.dog.position;
+    const nextState = fetchNearestLostSheep(this.state);
+    const nextDogPosition = nextState.dog.position;
+    this.state = nextState;
+
+    if (
+      previousDogPosition.x !== nextDogPosition.x ||
+      previousDogPosition.y !== nextDogPosition.y
+    ) {
+      this.dogMovement = {
+        durationMs: getPlayerMoveDurationMs(),
+        from: dogFrom,
+        startedAtMs: Date.now(),
+        to: nextDogPosition,
+      };
+    }
+
+    const fetchedSheep = this.state.sheep.find((sheep) =>
+      !sheep.gathered &&
+      sheep.position.x === this.state.dog.position.x &&
+      sheep.position.y + 1 === this.state.dog.position.y,
+    );
+    this.questMessage = fetchedSheep
+      ? `The sheepdog runs ahead toward ${fetchedSheep.name}.`
+      : "The sheepdog searches, but no lost sheep remain in this pasture.";
+    this.refreshScene();
+  }
+
+  private toggleDogStay(): void {
+    this.state = commandDog(this.state, this.state.dog.command === "stay" ? "follow" : "stay");
+    this.questMessage = this.state.dog.command === "stay"
+      ? "The sheepdog waits and watches from its place."
+      : "The sheepdog returns to Aquilla's side.";
     this.refreshScene();
   }
 
@@ -379,6 +456,7 @@ export class AquillaScene extends Phaser.Scene {
     if (this.isNear(FOLD_POSITION)) {
       if (this.state.objectives.foldRestored) {
         this.playerMovement = undefined;
+        this.dogMovement = undefined;
         this.state = enterOldPastureIfReady(this.state);
         this.questMessage = "Briarfold lies behind you, restored; the old pasture opens toward the wider kingdom.";
         this.refreshScene();
@@ -416,6 +494,7 @@ export class AquillaScene extends Phaser.Scene {
     if (this.isNear(OLD_PASTURE_WAYMARK_POSITION)) {
       if (this.state.objectives.fearEchoCalmed) {
         this.playerMovement = undefined;
+        this.dogMovement = undefined;
         this.state = enterLanternRuinsIfReady(this.state);
         this.questMessage = "The eastern waymark opens into the Lantern Ruins, where true light is received in order.";
       } else {
@@ -446,6 +525,7 @@ export class AquillaScene extends Phaser.Scene {
       this.isNear(LANTERN_RUINS_SANCTUM_GATE_POSITION)
     ) {
       this.playerMovement = undefined;
+      this.dogMovement = undefined;
       this.state = enterSanctumIfReady(this.state);
       this.questMessage = "The Sanctum opens beyond the beacons: remember, receive, return.";
       this.refreshScene();
@@ -645,6 +725,7 @@ export class AquillaScene extends Phaser.Scene {
 
   private drawWorld(graphics: Phaser.GameObjects.Graphics): void {
     const playerPosition = this.getRenderedPlayerTilePosition();
+    const dogPosition = this.getRenderedDogTilePosition();
 
     graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.grassBase), 1);
     graphics.fillRect(0, 0, SCENE_WIDTH, 480);
@@ -664,8 +745,8 @@ export class AquillaScene extends Phaser.Scene {
     drawPixelAsset(
       graphics,
       AQUILLA_ART.sprites.sheepdog,
-      this.state.dog.position.x * TILE_SIZE,
-      this.state.dog.position.y * TILE_SIZE + 8,
+      dogPosition.x * TILE_SIZE,
+      dogPosition.y * TILE_SIZE + 8,
       PIXEL_SCALE,
     );
 
@@ -684,6 +765,21 @@ export class AquillaScene extends Phaser.Scene {
     return {
       x: this.playerMovement.from.x + (this.playerMovement.to.x - this.playerMovement.from.x) * progress,
       y: this.playerMovement.from.y + (this.playerMovement.to.y - this.playerMovement.from.y) * progress,
+    };
+  }
+
+  private getRenderedDogTilePosition(): Vector2 {
+    if (!this.dogMovement) {
+      return this.state.dog.position;
+    }
+
+    const rawProgress =
+      (Date.now() - this.dogMovement.startedAtMs) / this.dogMovement.durationMs;
+    const progress = easeInOut(rawProgress);
+
+    return {
+      x: this.dogMovement.from.x + (this.dogMovement.to.x - this.dogMovement.from.x) * progress,
+      y: this.dogMovement.from.y + (this.dogMovement.to.y - this.dogMovement.from.y) * progress,
     };
   }
 
@@ -1000,6 +1096,7 @@ export class AquillaScene extends Phaser.Scene {
     clearGameSave(window.localStorage);
     this.activeDialogue = undefined;
     this.playerMovement = undefined;
+    this.dogMovement = undefined;
     this.state = createInitialState();
     this.guardian = {
       id: "fold-guardian",
