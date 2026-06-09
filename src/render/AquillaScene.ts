@@ -7,7 +7,7 @@ import { restoreFoldIfReady } from "../game/dungeon";
 import { resolveEncounter } from "../game/encounters";
 import { movePlayer } from "../game/movement";
 import { useStaffOnObject } from "../game/staff";
-import type { Direction, Encounter, GameState, Interactable } from "../game/types";
+import type { Direction, Encounter, GameState, Interactable, Vector2 } from "../game/types";
 import { renderDebugOverlay } from "./debugOverlay";
 import { buildWorldMapFromScene } from "./worldMap";
 
@@ -15,6 +15,7 @@ const PIXEL_SCALE = 2;
 const TILE_SIZE = 16 * PIXEL_SCALE;
 const SCENE_WIDTH = 20 * TILE_SIZE;
 const SCENE_HEIGHT = 13 * TILE_SIZE;
+const PLAYER_MOVE_DURATION_MS = 420;
 const PROTOTYPE_MAP = buildWorldMapFromScene(AQUILLA_ART.sceneMap);
 const ARROW_DIRECTIONS: Partial<Record<string, Direction>> = {
   ArrowDown: "down",
@@ -22,6 +23,21 @@ const ARROW_DIRECTIONS: Partial<Record<string, Direction>> = {
   ArrowRight: "right",
   ArrowUp: "up",
 };
+
+interface PlayerMovementAnimation {
+  durationMs: number;
+  from: Vector2;
+  startedAtMs: number;
+  to: Vector2;
+}
+
+function easeInOut(progress: number): number {
+  const boundedProgress = Phaser.Math.Clamp(progress, 0, 1);
+
+  return boundedProgress < 0.5
+    ? 2 * boundedProgress * boundedProgress
+    : 1 - (-2 * boundedProgress + 2) ** 2 / 2;
+}
 
 export class AquillaScene extends Phaser.Scene {
   private state: GameState = createInitialState();
@@ -36,6 +52,7 @@ export class AquillaScene extends Phaser.Scene {
     active: false,
   };
   private graphics?: Phaser.GameObjects.Graphics;
+  private playerMovement?: PlayerMovementAnimation;
 
   constructor() {
     super("AquillaScene");
@@ -47,6 +64,17 @@ export class AquillaScene extends Phaser.Scene {
     this.redrawWorld();
     this.registerKeyboardControls();
     renderDebugOverlay(this.state);
+  }
+
+  update(): void {
+    if (!this.playerMovement) return;
+
+    this.redrawWorld();
+
+    if (Date.now() - this.playerMovement.startedAtMs >= this.playerMovement.durationMs) {
+      this.playerMovement = undefined;
+      this.redrawWorld();
+    }
   }
 
   private registerKeyboardControls(): void {
@@ -98,7 +126,21 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private move(direction: Direction): void {
+    const previousPosition = this.state.player.position;
+    const renderedFrom = this.getRenderedPlayerTilePosition();
     this.state = movePlayer(this.state, direction, PROTOTYPE_MAP);
+    const nextPosition = this.state.player.position;
+    const moved = previousPosition.x !== nextPosition.x || previousPosition.y !== nextPosition.y;
+
+    if (moved) {
+      this.playerMovement = {
+        durationMs: PLAYER_MOVE_DURATION_MS,
+        from: renderedFrom,
+        startedAtMs: Date.now(),
+        to: nextPosition,
+      };
+    }
+
     this.refreshScene();
   }
 
@@ -115,6 +157,8 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private drawWorld(graphics: Phaser.GameObjects.Graphics): void {
+    const playerPosition = this.getRenderedPlayerTilePosition();
+
     graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.grassBase), 1);
     graphics.fillRect(0, 0, SCENE_WIDTH, 480);
 
@@ -125,8 +169,8 @@ export class AquillaScene extends Phaser.Scene {
     drawPixelAsset(
       graphics,
       AQUILLA_ART.sprites.aquilla,
-      this.state.player.position.x * TILE_SIZE,
-      this.state.player.position.y * TILE_SIZE - 16,
+      playerPosition.x * TILE_SIZE,
+      playerPosition.y * TILE_SIZE - 16,
       PIXEL_SCALE,
     );
 
@@ -139,6 +183,21 @@ export class AquillaScene extends Phaser.Scene {
     );
 
     this.drawHud(graphics);
+  }
+
+  private getRenderedPlayerTilePosition(): Vector2 {
+    if (!this.playerMovement) {
+      return this.state.player.position;
+    }
+
+    const rawProgress =
+      (Date.now() - this.playerMovement.startedAtMs) / this.playerMovement.durationMs;
+    const progress = easeInOut(rawProgress);
+
+    return {
+      x: this.playerMovement.from.x + (this.playerMovement.to.x - this.playerMovement.from.x) * progress,
+      y: this.playerMovement.from.y + (this.playerMovement.to.y - this.playerMovement.from.y) * progress,
+    };
   }
 
   private drawObjectiveWorldState(graphics: Phaser.GameObjects.Graphics): void {
