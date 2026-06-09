@@ -152,7 +152,8 @@ body {
   background: rgba(20, 17, 12, 0.62);
 }
 
-#quest-panel p {
+#quest-panel p,
+#objective-list {
   margin: 0;
   color: #d8cab0;
   font-size: 13px;
@@ -164,22 +165,50 @@ body {
   font-weight: 700;
 }
 
+#objective-list {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#objective-list li {
+  position: relative;
+  min-height: 22px;
+  padding: 6px 0 0 16px;
+  border-top: 1px solid rgba(236, 224, 196, 0.12);
+  color: #ece0c4;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+#objective-list li::before {
+  position: absolute;
+  top: 11px;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #e0a93a;
+  background: #24351f;
+  content: "";
+  transform: rotate(45deg);
+}
+
 #game-root {
   width: 100%;
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, auto) minmax(220px, 260px);
+  grid-template-columns: minmax(0, auto);
   align-items: center;
   justify-content: center;
-  gap: 16px;
   padding: 0;
 }
 
 #canvas-host {
   width: min(
-    616px,
-    max(320px, calc(100vw - 664px)),
+    760px,
+    max(320px, calc(100vw - 360px)),
     max(320px, calc((100dvh - 196px) * 1.333333))
   );
   aspect-ratio: 4 / 3;
@@ -196,17 +225,8 @@ body {
     0 18px 40px rgba(0, 0, 0, 0.32);
 }
 
-#debug-state {
-  width: 100%;
-  margin: 0;
-  padding: 8px 10px;
-  border: 1px solid rgba(224, 169, 58, 0.45);
-  border-radius: 6px;
-  background: rgba(35, 28, 18, 0.9);
-  color: #ece0c4;
-  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
+#debug-state[hidden] {
+  display: none;
 }
 
 @media (max-width: 1020px) {
@@ -219,15 +239,10 @@ body {
     grid-template-columns: 1fr;
     align-content: center;
     justify-items: center;
-    gap: 8px;
   }
 
   #canvas-host {
     width: min(100%, 560px, max(320px, calc((100dvh - 260px) * 1.333333)));
-  }
-
-  #debug-state {
-    width: min(100%, 560px);
   }
 }
 
@@ -292,15 +307,10 @@ body {
     grid-template-columns: 1fr;
     align-content: center;
     justify-items: center;
-    gap: 8px;
   }
 
   #canvas-host {
     width: min(100%, 440px, max(280px, calc((100dvh - 280px) * 1.333333)));
-  }
-
-  #debug-state {
-    width: min(100%, 440px);
   }
 }
 

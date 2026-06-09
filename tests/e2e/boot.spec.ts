@@ -21,7 +21,7 @@ function boxesIntersect(first: Box, second: Box): boolean {
   );
 }
 
-async function expectCanvasAndDebugSeparated(
+async function expectPlayableLayout(
   page: Page,
   viewport: Viewport,
 ): Promise<void> {
@@ -29,16 +29,20 @@ async function expectCanvasAndDebugSeparated(
   await page.goto("/");
 
   const canvas = page.locator("canvas");
-  const debugState = page.locator("#debug-state");
+  const questPanel = page.locator("#quest-panel");
+  const objectiveList = page.locator("#objective-list");
   await expect(canvas).toBeVisible();
-  await expect(debugState).toBeVisible();
+  await expect(questPanel).toBeVisible();
+  await expect(objectiveList).toBeVisible();
+  await expect(page.locator("#debug-state")).toBeHidden();
 
   const layout = await page.evaluate(() => {
     const canvasElement = document.querySelector("canvas");
-    const debugElement = document.querySelector("#debug-state");
+    const questElement = document.querySelector("#quest-panel");
+    const objectiveElement = document.querySelector("#objective-list");
 
-    if (!canvasElement || !debugElement) {
-      throw new Error("Missing canvas or debug overlay");
+    if (!canvasElement || !questElement || !objectiveElement) {
+      throw new Error("Missing canvas or player quest UI");
     }
 
     const toBox = (rect: DOMRect): Box => ({
@@ -51,13 +55,17 @@ async function expectCanvasAndDebugSeparated(
     return {
       canvas: toBox(canvasElement.getBoundingClientRect()),
       canvasHost: toBox(canvasElement.parentElement?.getBoundingClientRect() ?? canvasElement.getBoundingClientRect()),
-      debug: toBox(debugElement.getBoundingClientRect()),
       documentWidth: document.documentElement.scrollWidth,
+      objectives: toBox(objectiveElement.getBoundingClientRect()),
+      quest: toBox(questElement.getBoundingClientRect()),
       viewport: { height: window.innerHeight, width: window.innerWidth },
     };
   });
 
-  expect(boxesIntersect(layout.canvas, layout.debug)).toBe(false);
+  expect(boxesIntersect(layout.canvas, layout.quest)).toBe(false);
+  expect(layout.objectives.bottom).toBeLessThanOrEqual(layout.quest.bottom);
+  expect(layout.objectives.left).toBeGreaterThanOrEqual(layout.quest.left);
+  expect(layout.objectives.right).toBeLessThanOrEqual(layout.quest.right);
   expect(layout.canvas.left).toBeGreaterThanOrEqual(0);
   expect(layout.canvas.top).toBeGreaterThanOrEqual(0);
   expect(layout.canvas.right).toBeLessThanOrEqual(layout.viewport.width);
@@ -81,6 +89,11 @@ test("loads Aquilla and renders a nonblank game canvas", async ({ page }) => {
   await expect(page.getByText("Arrow keys")).toBeVisible();
   await expect(page.getByText("E interact")).toBeVisible();
   await expect(page.locator("#quest-prompt")).toContainText("Move near");
+  await expect(page.locator("#objective-sheep")).toContainText("Lost sheep 0/3");
+  await expect(page.locator("#objective-water")).toContainText("Spring dry");
+  await expect(page.locator("#objective-guardian")).toContainText("Guardian hostile");
+  await expect(page.locator("#objective-fold")).toContainText("Fold lost");
+  await expect(page.locator("#debug-state")).toBeHidden();
   await expect(page.locator("#debug-state")).toContainText("Aquilla");
   await expect(page.locator("#debug-state")).toContainText("Greenward");
   await expect(page.locator("#debug-state")).toContainText("Art Bible");
@@ -119,18 +132,18 @@ test("loads Aquilla and renders a nonblank game canvas", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("keeps debug state outside the game canvas on desktop", async ({ page }) => {
-  await expectCanvasAndDebugSeparated(page, { width: 1280, height: 720 });
+test("keeps player UI outside the game canvas on desktop", async ({ page }) => {
+  await expectPlayableLayout(page, { width: 1280, height: 720 });
 });
 
-test("keeps debug state outside the game canvas at tablet widths", async ({ page }) => {
-  await expectCanvasAndDebugSeparated(page, { width: 900, height: 720 });
+test("keeps player UI outside the game canvas at tablet widths", async ({ page }) => {
+  await expectPlayableLayout(page, { width: 900, height: 720 });
 });
 
-test("keeps debug state outside the game canvas on compact screens", async ({ page }) => {
-  await expectCanvasAndDebugSeparated(page, { width: 640, height: 480 });
+test("keeps player UI outside the game canvas on compact screens", async ({ page }) => {
+  await expectPlayableLayout(page, { width: 640, height: 480 });
 });
 
 test("keeps a playable canvas size in short compact viewports", async ({ page }) => {
-  await expectCanvasAndDebugSeparated(page, { width: 390, height: 360 });
+  await expectPlayableLayout(page, { width: 390, height: 360 });
 });

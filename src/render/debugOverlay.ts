@@ -10,6 +10,9 @@ export function renderDebugOverlay(state: GameState): void {
     overlay.id = "debug-state";
   }
 
+  overlay.hidden = true;
+  overlay.setAttribute("aria-hidden", "true");
+
   if (overlay.parentElement !== mount) {
     mount.append(overlay);
   }

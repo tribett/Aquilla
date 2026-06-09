@@ -228,6 +228,7 @@ export class AquillaScene extends Phaser.Scene {
   private renderQuestState(): void {
     renderQuestHud({
       message: this.questMessage,
+      objectives: this.state.objectives,
       prompt: this.getQuestPrompt(),
     });
   }
