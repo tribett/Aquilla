@@ -94,6 +94,7 @@ test("loads Aquilla and renders a nonblank game canvas", async ({ page }) => {
   await expect(page.locator("#objective-water")).toContainText("Spring dry");
   await expect(page.locator("#objective-guardian")).toContainText("Guardian hostile");
   await expect(page.locator("#objective-fold")).toContainText("Fold lost");
+  await expect(page.locator("#objective-inventory")).toContainText("Inventory: Staff");
   await expect(page.locator("#debug-state")).toBeHidden();
   await expect(page.locator("#debug-state")).toContainText("Aquilla");
   await expect(page.locator("#debug-state")).toContainText("Greenward");

@@ -45,6 +45,7 @@ test("opens the Lantern Ruins after the fear echo and lights the creed beacons",
   const questPrompt = page.locator("#quest-prompt");
   const questMessage = page.locator("#quest-message");
   const creedObjective = page.locator("#objective-creed");
+  const inventoryObjective = page.locator("#objective-inventory");
 
   await enterOldPasture(page);
   await followPath(page, ["ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]);
@@ -54,6 +55,53 @@ test("opens the Lantern Ruins after the fear echo and lights the creed beacons",
   await expect(debugState).toContainText("FearEcho calmed");
 
   await followPath(page, [
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+  ]);
+  await expect(questPrompt).toContainText("find the grove lantern");
+  await page.keyboard.press("E");
+  await expect(areaLabel).toContainText("Area: Old Pasture");
+  await expect(questMessage).toContainText("The Lantern Ruins wait for the grove lantern");
+
+  await followPath(page, [
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowDown",
+    "ArrowDown",
+    "ArrowDown",
+  ]);
+  await expect(questPrompt).toContainText("track the old scent");
+  await page.keyboard.press("F");
+  await expect(inventoryObjective).toContainText("Inventory: Staff, Grove Lantern");
+
+  await followPath(page, [
+    "ArrowUp",
+    "ArrowUp",
+    "ArrowUp",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
     "ArrowRight",
     "ArrowRight",
     "ArrowRight",

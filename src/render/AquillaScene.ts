@@ -389,7 +389,7 @@ export class AquillaScene extends Phaser.Scene {
     this.questMessage = fetchesGatePlate
       ? "The sheepdog runs back to the old pressure plate by the Shepherd's Gate."
       : tracksScent
-        ? "The sheepdog lowers its nose and follows the old scent into a hidden grove."
+        ? "The sheepdog lowers its nose and follows the old scent into a hidden grove; Aquilla receives the grove lantern."
         : fetchedSheep
           ? `The sheepdog runs ahead toward ${fetchedSheep.name}.`
           : "The sheepdog searches, but no lost sheep remain in this pasture.";
@@ -537,11 +537,13 @@ export class AquillaScene extends Phaser.Scene {
     }
 
     if (this.isNear(OLD_PASTURE_WAYMARK_POSITION)) {
-      if (this.state.objectives.fearEchoCalmed) {
+      if (this.state.objectives.fearEchoCalmed && this.state.inventory.includes("grove-lantern")) {
         this.playerMovement = undefined;
         this.dogMovement = undefined;
         this.state = enterLanternRuinsIfReady(this.state);
         this.questMessage = "The eastern waymark opens into the Lantern Ruins, where true light is received in order.";
+      } else if (this.state.objectives.fearEchoCalmed) {
+        this.questMessage = "The Lantern Ruins wait for the grove lantern carried from the hidden grove.";
       } else {
         this.questMessage = "The eastern waymark names Elarion's road: gather, guard, restore.";
       }
@@ -616,6 +618,7 @@ export class AquillaScene extends Phaser.Scene {
   private renderQuestState(): void {
     renderQuestHud({
       currentArea: this.state.currentArea,
+      inventory: this.state.inventory,
       message: this.questMessage,
       objectives: this.state.objectives,
       prompt: this.getQuestPrompt(),
@@ -696,9 +699,13 @@ export class AquillaScene extends Phaser.Scene {
       }
 
       if (this.isNear(OLD_PASTURE_WAYMARK_POSITION)) {
-        return this.state.objectives.fearEchoCalmed
+        if (!this.state.objectives.fearEchoCalmed) {
+          return "Press E: read the eastern waymark.";
+        }
+
+        return this.state.inventory.includes("grove-lantern")
           ? "Press E: enter the Lantern Ruins."
-          : "Press E: read the eastern waymark.";
+          : "Press E: find the grove lantern before entering the Lantern Ruins.";
       }
 
       if (canTrackOldPastureScent(this.state)) {
@@ -706,7 +713,9 @@ export class AquillaScene extends Phaser.Scene {
       }
 
       if (this.state.objectives.hiddenGroveFound && this.isNear(HIDDEN_GROVE_POSITION)) {
-        return "The hidden grove remembers mercy in quiet growth.";
+        return this.state.inventory.includes("grove-lantern")
+          ? "The grove lantern is carried; received light goes ahead."
+          : "The hidden grove remembers mercy in quiet growth.";
       }
 
       return "Explore the old pasture. The road east is newly opened.";
@@ -870,6 +879,7 @@ export class AquillaScene extends Phaser.Scene {
       this.drawOldPastureScentTrail(graphics);
       this.drawFearEcho(graphics);
       this.drawOldPastureWaymark(graphics);
+      this.drawGroveLantern(graphics);
       return;
     }
 
@@ -1126,6 +1136,24 @@ export class AquillaScene extends Phaser.Scene {
     graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.trueLightHighlight), 1);
     graphics.fillRect(groveX + 11, groveY, 6, 6);
     graphics.fillRect(groveX + 9, groveY + 12, 10, 3);
+  }
+
+  private drawGroveLantern(graphics: Phaser.GameObjects.Graphics): void {
+    if (!this.state.objectives.hiddenGroveLanternClaimed) return;
+
+    const x = HIDDEN_GROVE_POSITION.x * TILE_SIZE + 12;
+    const y = HIDDEN_GROVE_POSITION.y * TILE_SIZE + 7;
+
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+    graphics.fillRect(x + 3, y, 10, 4);
+    graphics.fillRect(x + 1, y + 4, 14, 18);
+    graphics.fillRect(x + 4, y + 22, 8, 3);
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.trueLight), 0.88);
+    graphics.fillRect(x + 4, y + 6, 8, 12);
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.trueLightHighlight), 1);
+    graphics.fillRect(x + 6, y + 8, 4, 7);
+    graphics.lineStyle(2, hexToNumber(AQUILLA_ART.palette.trueLightHighlight), 0.55);
+    graphics.strokeCircle(x + 8, y + 12, 16);
   }
 
   private drawFearEcho(graphics: Phaser.GameObjects.Graphics): void {

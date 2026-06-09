@@ -23,7 +23,7 @@ describe("old pasture scent trail", () => {
     expect(canTrackOldPastureScent(oldPasture)).toBe(true);
   });
 
-  it("sends the sheepdog down the trail and marks the hidden grove found", () => {
+  it("sends the sheepdog down the trail and marks the hidden grove found with its lamp claimed", () => {
     const initialState = createInitialState();
     const state = {
       ...initialState,
@@ -38,7 +38,9 @@ describe("old pasture scent trail", () => {
 
     expect(next.dog.command).toBe("fetch");
     expect(next.dog.position).toEqual(HIDDEN_GROVE_POSITION);
+    expect(next.inventory).toContain("grove-lantern");
     expect(next.objectives.hiddenGroveFound).toBe(true);
+    expect(next.objectives.hiddenGroveLanternClaimed).toBe(true);
   });
 
   it("does not retrack the scent after the hidden grove has been found", () => {

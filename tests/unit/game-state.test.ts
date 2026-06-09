@@ -13,7 +13,7 @@ describe("createInitialState", () => {
     expect(state.player.role).toBe("shepherd-boy");
     expect(state.player.health).toBe(3);
     expect(state.player.maxHealth).toBe(3);
-    expect(state.inventory).toContain("shepherd-staff");
+    expect(state.inventory).toEqual(["shepherd-staff"]);
     expect(state.dog.style).toBe("border-collie");
     expect(state.creatures).toEqual([
       {
@@ -54,6 +54,7 @@ describe("createInitialState", () => {
       gatheredSheep: 0,
       guardianCalmed: false,
       hiddenGroveFound: false,
+      hiddenGroveLanternClaimed: false,
       lanternRuinsRestored: false,
       requiredCreedBeacons: 3,
       requiredSanctumWitnessSteps: 3,

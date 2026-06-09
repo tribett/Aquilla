@@ -31,7 +31,8 @@ export function enterOldPastureIfReady(state: GameState): GameState {
 export function enterLanternRuinsIfReady(state: GameState): GameState {
   if (
     !state.objectives.fearEchoCalmed ||
-    state.currentArea !== "old-pasture"
+    state.currentArea !== "old-pasture" ||
+    !state.inventory.includes("grove-lantern")
   ) {
     return state;
   }

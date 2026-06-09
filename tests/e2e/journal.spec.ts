@@ -16,6 +16,7 @@ test("opens a journal overlay and pauses movement while it is open", async ({ pa
   await expect(journal).toBeVisible();
   await expect(journal).toContainText("Journal");
   await expect(journal).toContainText("Lost sheep 0/3");
+  await expect(journal).toContainText("Inventory: Staff");
 
   await page.keyboard.press("ArrowRight");
 

@@ -7,7 +7,7 @@ export type AreaId =
 
 export type Direction = "up" | "down" | "left" | "right";
 
-export type InventoryItem = "shepherd-staff";
+export type InventoryItem = "grove-lantern" | "shepherd-staff";
 
 export type DogCommand = "follow" | "stay" | "fetch" | "herd" | "distract";
 
@@ -63,6 +63,7 @@ export interface Objectives {
   gatheredSheep: number;
   guardianCalmed: boolean;
   hiddenGroveFound: boolean;
+  hiddenGroveLanternClaimed: boolean;
   lanternRuinsRestored: boolean;
   requiredCreedBeacons: number;
   requiredSanctumWitnessSteps: number;

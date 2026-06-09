@@ -87,4 +87,35 @@ describe("game save persistence", () => {
 
     expect(storage.getItem(AQUILLA_SAVE_KEY)).toBeNull();
   });
+
+  it("migrates a found hidden grove from older saves into the grove lantern item", () => {
+    const storage = new MemoryStorage();
+    const legacyState = createInitialState();
+
+    storage.setItem(
+      AQUILLA_SAVE_KEY,
+      JSON.stringify({
+        fearEcho: { id: "old-pasture-fear-echo", kind: "fear-echo", state: "restored" },
+        guardian: { id: "fold-guardian", kind: "corrupted-guardian", state: "restored" },
+        questMessage: "The sheepdog lowers its nose and follows the old scent into a hidden grove.",
+        state: {
+          ...legacyState,
+          currentArea: "old-pasture",
+          inventory: ["shepherd-staff"],
+          objectives: {
+            ...legacyState.objectives,
+            hiddenGroveFound: true,
+            hiddenGroveLanternClaimed: undefined,
+          },
+        },
+        version: 5,
+        waterChannel: { id: "dry-channel", kind: "water-channel", active: true },
+      }),
+    );
+
+    const restored = loadGameSave(storage);
+
+    expect(restored?.state.inventory).toContain("grove-lantern");
+    expect(restored?.state.objectives.hiddenGroveLanternClaimed).toBe(true);
+  });
 });

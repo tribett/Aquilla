@@ -41,10 +41,12 @@ test("tracks an old scent trail into a hidden grove with the sheepdog", async ({
   await page.goto("/?motion=120");
 
   const debugState = page.locator("#debug-state");
+  const inventoryObjective = page.locator("#objective-inventory");
   const groveObjective = page.locator("#objective-grove");
   const questPrompt = page.locator("#quest-prompt");
   const questMessage = page.locator("#quest-message");
 
+  await expect(inventoryObjective).toContainText("Inventory: Staff");
   await expect(groveObjective).toContainText("Hidden grove hidden");
 
   await enterOldPasture(page);
@@ -60,6 +62,8 @@ test("tracks an old scent trail into a hidden grove with the sheepdog", async ({
 
   await expect(debugState).toContainText("Dog fetch 3,11");
   await expect(debugState).toContainText("Grove found");
+  await expect(debugState).toContainText("Inventory shepherd-staff,grove-lantern");
+  await expect(inventoryObjective).toContainText("Inventory: Staff, Grove Lantern");
   await expect(groveObjective).toContainText("Hidden grove found");
-  await expect(questMessage).toContainText("hidden grove");
+  await expect(questMessage).toContainText("grove lantern");
 });

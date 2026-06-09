@@ -25,7 +25,7 @@ export function loadGameSave(storage: Storage): GameSaveSnapshot | undefined {
 
     if (!isValidSaveSnapshot(parsed)) return undefined;
 
-    return parsed;
+    return normalizeSaveSnapshot(parsed);
   } catch {
     return undefined;
   }
@@ -43,6 +43,7 @@ function isValidSaveSnapshot(value: Partial<GameSaveSnapshot>): value is GameSav
     typeof value.state?.player?.maxHealth === "number" &&
     Array.isArray(value.state?.creatures) &&
     Array.isArray(value.state?.hazards) &&
+    Array.isArray(value.state?.inventory) &&
     Boolean(value.state?.player?.position) &&
     Boolean(value.state?.dog?.position) &&
     Boolean(value.state?.objectives) &&
@@ -50,4 +51,29 @@ function isValidSaveSnapshot(value: Partial<GameSaveSnapshot>): value is GameSav
     Boolean(value.fearEcho?.state) &&
     Boolean(value.waterChannel)
   );
+}
+
+function normalizeSaveSnapshot(snapshot: GameSaveSnapshot): GameSaveSnapshot {
+  const hasGroveLantern = snapshot.state.inventory.includes("grove-lantern");
+  const shouldCarryGroveLantern =
+    hasGroveLantern ||
+    Boolean(
+      snapshot.state.objectives.hiddenGroveLanternClaimed ||
+      snapshot.state.objectives.hiddenGroveFound,
+    );
+
+  return {
+    ...snapshot,
+    state: {
+      ...snapshot.state,
+      inventory:
+        shouldCarryGroveLantern && !hasGroveLantern
+          ? [...snapshot.state.inventory, "grove-lantern"]
+          : snapshot.state.inventory,
+      objectives: {
+        ...snapshot.state.objectives,
+        hiddenGroveLanternClaimed: shouldCarryGroveLantern,
+      },
+    },
+  };
 }

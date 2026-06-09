@@ -1,7 +1,8 @@
-import type { AreaId, Objectives } from "../game/types";
+import type { AreaId, InventoryItem, Objectives } from "../game/types";
 
 export interface QuestHudState {
   currentArea: AreaId;
+  inventory: InventoryItem[];
   message: string;
   objectives: Objectives;
   prompt: string;
@@ -60,6 +61,18 @@ function renderObjectiveText(objectives: Objectives): void {
   updateText("#journal-objective-grove", grove);
 }
 
+function renderInventoryText(inventory: readonly InventoryItem[]): void {
+  const labels = inventory.map((item) => {
+    if (item === "grove-lantern") return "Grove Lantern";
+    if (item === "shepherd-staff") return "Staff";
+    return item;
+  });
+  const text = `Inventory: ${labels.join(", ")}`;
+
+  updateText("#objective-inventory", text);
+  updateText("#journal-objective-inventory", text);
+}
+
 export function isJournalOpen(): boolean {
   const journal = document.querySelector<HTMLElement>("#journal-panel");
 
@@ -97,4 +110,5 @@ export function renderQuestHud(state: QuestHudState): void {
   }
 
   renderObjectiveText(state.objectives);
+  renderInventoryText(state.inventory);
 }

@@ -23,6 +23,7 @@ export function renderDebugOverlay(state: GameState): void {
     `Area ${state.currentArea}`,
     `Aquilla ${state.player.position.x},${state.player.position.y}`,
     `Resolve ${state.player.health}/${state.player.maxHealth}`,
+    `Inventory ${state.inventory.join(",")}`,
     `Dog ${state.dog.command} ${state.dog.position.x},${state.dog.position.y}`,
     `Sheep ${state.objectives.gatheredSheep}/${state.objectives.requiredSheep}`,
     `Water ${state.objectives.waterRestored ? "restored" : "dry"}`,
@@ -35,6 +36,7 @@ export function renderDebugOverlay(state: GameState): void {
     `Sanctum ${state.objectives.sanctumWitnessSteps}/${state.objectives.requiredSanctumWitnessSteps}`,
     `Thorns ${state.objectives.thornSnaresCleared}/${state.objectives.requiredThornSnares}`,
     `Grove ${state.objectives.hiddenGroveFound ? "found" : "hidden"}`,
+    `GroveLantern ${state.objectives.hiddenGroveLanternClaimed ? "claimed" : "missing"}`,
     `ShepherdGate ${isShepherdGateOpen(state) ? "open" : "closed"}`,
     ...state.creatures.map(
       (creature) => `Prowler ${creature.state} ${creature.position.x},${creature.position.y}`,

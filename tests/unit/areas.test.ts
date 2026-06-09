@@ -32,7 +32,7 @@ describe("area progression", () => {
     expect(next.dog.command).toBe("follow");
   });
 
-  it("opens the Lantern Ruins only after the fear echo is calmed", () => {
+  it("opens the Lantern Ruins only after the fear echo is calmed and Aquilla carries the grove lantern", () => {
     const initialState = createInitialState();
     const oldPastureState = {
       ...initialState,
@@ -49,7 +49,19 @@ describe("area progression", () => {
       },
     };
 
-    const next = enterLanternRuinsIfReady(calmedState);
+    expect(enterLanternRuinsIfReady(calmedState)).toBe(calmedState);
+
+    const lanternState = {
+      ...calmedState,
+      inventory: [...calmedState.inventory, "grove-lantern" as const],
+      objectives: {
+        ...calmedState.objectives,
+        hiddenGroveFound: true,
+        hiddenGroveLanternClaimed: true,
+      },
+    };
+
+    const next = enterLanternRuinsIfReady(lanternState);
 
     expect(next.currentArea).toBe("lantern-ruins");
     expect(next.player.position).toEqual({ x: 2, y: 6 });

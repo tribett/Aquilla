@@ -24,9 +24,13 @@ export function trackOldPastureScent(state: GameState): GameState {
       command: "fetch",
       position: { ...HIDDEN_GROVE_POSITION },
     },
+    inventory: state.inventory.includes("grove-lantern")
+      ? state.inventory
+      : [...state.inventory, "grove-lantern"],
     objectives: {
       ...state.objectives,
       hiddenGroveFound: true,
+      hiddenGroveLanternClaimed: true,
     },
   };
 }

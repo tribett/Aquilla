@@ -43,6 +43,23 @@ async function restoreLanternRuins(page: Page): Promise<void> {
   await page.keyboard.press("E");
   await page.keyboard.press("E");
   await followPath(page, [
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowLeft",
+    "ArrowDown",
+    "ArrowDown",
+    "ArrowDown",
+  ]);
+  await page.keyboard.press("F");
+  await followPath(page, [
+    "ArrowUp",
+    "ArrowUp",
+    "ArrowUp",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
     "ArrowRight",
     "ArrowRight",
     "ArrowRight",

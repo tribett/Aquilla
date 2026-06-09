@@ -65,6 +65,7 @@ export function createInitialState(): GameState {
       gatheredSheep: 0,
       guardianCalmed: false,
       hiddenGroveFound: false,
+      hiddenGroveLanternClaimed: false,
       lanternRuinsRestored: false,
       requiredCreedBeacons: 3,
       requiredSanctumWitnessSteps: 3,
