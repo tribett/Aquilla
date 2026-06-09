@@ -57,6 +57,7 @@ export interface Creature extends Actor {
 export interface Objectives {
   creedBeaconsLit: number;
   fearEchoCalmed: boolean;
+  foldBellRung: boolean;
   foldRestored: boolean;
   gameComplete: boolean;
   gatheredSheep: number;

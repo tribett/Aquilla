@@ -10,6 +10,7 @@ describe("useStaffOnObject", () => {
     const result = useStaffOnObject(createInitialState(), bell);
 
     expect(result.object.active).toBe(true);
+    expect(result.state.objectives.foldBellRung).toBe(true);
     expect(result.message).toBe("The fold-bell rings clear across the pasture.");
   });
 

@@ -20,7 +20,13 @@ export function useStaffOnObject(
 
   if (object.kind === "bell") {
     return {
-      state,
+      state: {
+        ...state,
+        objectives: {
+          ...state.objectives,
+          foldBellRung: true,
+        },
+      },
       object: { ...object, active: true },
       message: `The ${object.id} rings clear across the pasture.`,
     };

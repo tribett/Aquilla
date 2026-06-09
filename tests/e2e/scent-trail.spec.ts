@@ -18,6 +18,7 @@ async function enterOldPasture(page: Page): Promise<void> {
   await page.keyboard.press("W");
   await page.keyboard.press("D");
   await page.keyboard.press("G");
+  await page.keyboard.press("B");
   await page.keyboard.press("R");
   await followPath(page, [
     "ArrowRight",

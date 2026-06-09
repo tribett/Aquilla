@@ -27,6 +27,7 @@ export function renderDebugOverlay(state: GameState): void {
     `Sheep ${state.objectives.gatheredSheep}/${state.objectives.requiredSheep}`,
     `Water ${state.objectives.waterRestored ? "restored" : "dry"}`,
     `Guardian ${state.objectives.guardianCalmed ? "calmed" : "hostile"}`,
+    `Bell ${state.objectives.foldBellRung ? "rung" : "silent"}`,
     `Fold ${state.objectives.foldRestored ? "restored" : "lost"}`,
     `FearEcho ${state.objectives.fearEchoCalmed ? "calmed" : "restless"}`,
     `Creed ${state.objectives.creedBeaconsLit}/${state.objectives.requiredCreedBeacons}`,

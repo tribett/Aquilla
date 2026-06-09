@@ -43,6 +43,9 @@ test("plays the staff dog and Fold completion loop with hotkeys", async ({ page 
   await page.keyboard.press("G");
   await expect(debugState).toContainText("Guardian calmed");
 
+  await page.keyboard.press("B");
+  await expect(debugState).toContainText("Bell rung");
+
   await page.keyboard.press("R");
   await expect(debugState).toContainText("Fold restored");
 });
@@ -62,6 +65,9 @@ test("renders objective progress visibly on the game canvas", async ({ page }) =
 
   await page.keyboard.press("D");
   await page.keyboard.press("G");
+  signature = await expectCanvasChanged(page, signature);
+
+  await page.keyboard.press("B");
   signature = await expectCanvasChanged(page, signature);
 
   await page.keyboard.press("R");

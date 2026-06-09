@@ -1,6 +1,7 @@
 import type { GameState } from "./types";
 
 export interface FoldProgress {
+  foldBellRung: boolean;
   gatheredAllSheep: boolean;
   waterRestored: boolean;
   guardianCalmed: boolean;
@@ -9,6 +10,7 @@ export interface FoldProgress {
 
 export function getFoldProgress(state: GameState): FoldProgress {
   return {
+    foldBellRung: state.objectives.foldBellRung,
     gatheredAllSheep: state.objectives.gatheredSheep >= state.objectives.requiredSheep,
     waterRestored: state.objectives.waterRestored,
     guardianCalmed: state.objectives.guardianCalmed,
@@ -18,7 +20,11 @@ export function getFoldProgress(state: GameState): FoldProgress {
 
 export function restoreFoldIfReady(state: GameState): GameState {
   const progress = getFoldProgress(state);
-  const ready = progress.gatheredAllSheep && progress.waterRestored && progress.guardianCalmed;
+  const ready =
+    progress.gatheredAllSheep &&
+    progress.waterRestored &&
+    progress.guardianCalmed &&
+    progress.foldBellRung;
 
   if (!ready) {
     return state;

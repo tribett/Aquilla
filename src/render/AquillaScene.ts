@@ -54,6 +54,7 @@ const INTERACTION_RANGE = 1.5;
 const DEFAULT_PLAYER_MOVE_DURATION_MS = 260;
 const PROTOTYPE_MAP = buildWorldMapFromScene(AQUILLA_ART.sceneMap);
 const FOLD_POSITION: Vector2 = { x: 17, y: 7 };
+const FOLD_BELL_POSITION: Vector2 = { x: 16, y: 6 };
 const BRIARFOLD_ELDER_POSITION: Vector2 = { x: 3, y: 5 };
 const GUARDIAN_POSITION: Vector2 = { x: 11, y: 5 };
 const WATER_CHANNEL_POSITION: Vector2 = { x: 7, y: 10 };
@@ -268,6 +269,9 @@ export class AquillaScene extends Phaser.Scene {
       case " ":
       case "e":
         this.interact();
+        return true;
+      case "b":
+        this.ringFoldBell();
         return true;
       case "g": {
         const result = resolveEncounter(this.state, this.guardian, "staff-calm");
@@ -489,6 +493,11 @@ export class AquillaScene extends Phaser.Scene {
       return;
     }
 
+    if (this.isNear(FOLD_BELL_POSITION) && !this.state.objectives.foldBellRung) {
+      this.ringFoldBell();
+      return;
+    }
+
     if (this.isNear(FOLD_POSITION)) {
       if (this.state.objectives.foldRestored) {
         this.playerMovement = undefined;
@@ -542,6 +551,19 @@ export class AquillaScene extends Phaser.Scene {
     }
 
     this.questMessage = "Briarfold lies behind you, restored; the old pasture opens toward the wider kingdom.";
+    this.refreshScene();
+  }
+
+  private ringFoldBell(): void {
+    const result = useStaffOnObject(this.state, {
+      active: this.state.objectives.foldBellRung,
+      id: "fold-bell",
+      kind: "bell",
+    });
+    this.state = result.state;
+    this.questMessage = this.state.objectives.foldBellRung
+      ? "The old fold-bell rings through the valley; scattered things remember the Shepherd's call."
+      : result.message;
     this.refreshScene();
   }
 
@@ -727,6 +749,10 @@ export class AquillaScene extends Phaser.Scene {
         : "Press E: ask the sheepdog to distract the guardian.";
     }
 
+    if (this.isNear(FOLD_BELL_POSITION) && !this.state.objectives.foldBellRung) {
+      return "Press E: ring the old fold-bell with the Shepherd's Staff.";
+    }
+
     if (this.isNear(FOLD_POSITION)) {
       return this.state.objectives.foldRestored
         ? "The Fold is restored."
@@ -861,6 +887,7 @@ export class AquillaScene extends Phaser.Scene {
     this.drawThornSnares(graphics);
     this.drawProwlers(graphics);
     this.drawShepherdGate(graphics);
+    this.drawFoldBell(graphics);
     this.drawSheep(graphics);
     this.drawWaterRestoration(graphics);
     this.drawGuardian(graphics);
@@ -973,6 +1000,26 @@ export class AquillaScene extends Phaser.Scene {
       graphics.fillRect(x + 4, y + 2, 4, TILE_SIZE - 8);
       graphics.fillRect(x + 12, y + 2, 4, TILE_SIZE - 8);
     });
+  }
+
+  private drawFoldBell(graphics: Phaser.GameObjects.Graphics): void {
+    const x = FOLD_BELL_POSITION.x * TILE_SIZE + 7;
+    const y = FOLD_BELL_POSITION.y * TILE_SIZE + 1;
+    const rung = this.state.objectives.foldBellRung;
+
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+    graphics.fillRect(x + 7, y + 1, 4, 26);
+    graphics.fillRect(x + 1, y + 10, 18, 14);
+    graphics.fillRect(x + 4, y + 24, 12, 4);
+    graphics.fillStyle(hexToNumber(rung ? AQUILLA_ART.palette.trueLight : AQUILLA_ART.palette.panelTrim), 0.94);
+    graphics.fillRect(x + 3, y + 11, 14, 10);
+    graphics.fillStyle(hexToNumber(rung ? AQUILLA_ART.palette.trueLightHighlight : "#7d745a"), 1);
+    graphics.fillRect(x + 7, y + 21, 4, 4);
+
+    if (rung) {
+      graphics.lineStyle(2, hexToNumber(AQUILLA_ART.palette.trueLightHighlight), 0.82);
+      graphics.strokeCircle(x + 9, y + 16, 17);
+    }
   }
 
   private drawSheepMarker(graphics: Phaser.GameObjects.Graphics, x: number, y: number): void {

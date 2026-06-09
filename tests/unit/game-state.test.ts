@@ -48,6 +48,7 @@ describe("createInitialState", () => {
     expect(state.objectives).toEqual({
       creedBeaconsLit: 0,
       fearEchoCalmed: false,
+      foldBellRung: false,
       foldRestored: false,
       gameComplete: false,
       gatheredSheep: 0,

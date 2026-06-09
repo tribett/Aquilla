@@ -39,6 +39,7 @@ test("updates journal objectives from restored game state", async ({ page }) => 
   await page.keyboard.press("W");
   await page.keyboard.press("D");
   await page.keyboard.press("G");
+  await page.keyboard.press("B");
   await page.keyboard.press("R");
   await page.keyboard.press("J");
 
@@ -47,5 +48,6 @@ test("updates journal objectives from restored game state", async ({ page }) => 
   await expect(journal).toContainText("Lost sheep 3/3");
   await expect(journal).toContainText("Spring restored");
   await expect(journal).toContainText("Guardian calmed");
+  await expect(journal).toContainText("Fold bell rung");
   await expect(journal).toContainText("Fold restored");
 });

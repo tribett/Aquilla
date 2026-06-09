@@ -22,12 +22,14 @@ test("plays the Fold loop through proximity prompts and one interact key", async
   const waterObjective = page.locator("#objective-water");
   const guardianObjective = page.locator("#objective-guardian");
   const foldObjective = page.locator("#objective-fold");
+  const bellObjective = page.locator("#objective-bell");
 
   await expect(sheepObjective).toContainText("Lost sheep 0/3");
   await expect(areaLabel).toContainText("Area: Briarfold");
   await expect(waterObjective).toContainText("Spring dry");
   await expect(guardianObjective).toContainText("Guardian hostile");
   await expect(foldObjective).toContainText("Fold lost");
+  await expect(bellObjective).toContainText("Fold bell silent");
 
   await followPath(page, ["ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]);
   await expect(questPrompt).toContainText("Press E");
@@ -64,6 +66,10 @@ test("plays the Fold loop through proximity prompts and one interact key", async
   await page.keyboard.press("S");
   await expect(debugState).toContainText("ShepherdGate open");
   await followPath(page, ["ArrowRight", "ArrowRight", "ArrowRight"]);
+  await expect(questPrompt).toContainText("ring the old fold-bell");
+  await page.keyboard.press("E");
+  await expect(debugState).toContainText("Bell rung");
+  await expect(bellObjective).toContainText("Fold bell rung");
   await page.keyboard.press("E");
   await expect(debugState).toContainText("Fold restored");
   await expect(foldObjective).toContainText("Fold restored");

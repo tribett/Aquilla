@@ -27,6 +27,7 @@ function renderObjectiveText(objectives: Objectives): void {
   const sheep = `Lost sheep ${objectives.gatheredSheep}/${objectives.requiredSheep}`;
   const water = objectives.waterRestored ? "Spring restored" : "Spring dry";
   const guardian = objectives.guardianCalmed ? "Guardian calmed" : "Guardian hostile";
+  const bell = objectives.foldBellRung ? "Fold bell rung" : "Fold bell silent";
   const fold = objectives.foldRestored ? "Fold restored" : "Fold lost";
   const fear = objectives.fearEchoCalmed ? "Fear echo calmed" : "Fear echo restless";
   const creed = `Creed beacons ${objectives.creedBeaconsLit}/${objectives.requiredCreedBeacons}`;
@@ -38,6 +39,7 @@ function renderObjectiveText(objectives: Objectives): void {
   updateText("#objective-sheep", sheep);
   updateText("#objective-water", water);
   updateText("#objective-guardian", guardian);
+  updateText("#objective-bell", bell);
   updateText("#objective-fold", fold);
   updateText("#objective-fear", fear);
   updateText("#objective-creed", creed);
@@ -48,6 +50,7 @@ function renderObjectiveText(objectives: Objectives): void {
   updateText("#journal-objective-sheep", sheep);
   updateText("#journal-objective-water", water);
   updateText("#journal-objective-guardian", guardian);
+  updateText("#journal-objective-bell", bell);
   updateText("#journal-objective-fold", fold);
   updateText("#journal-objective-fear", fear);
   updateText("#journal-objective-creed", creed);

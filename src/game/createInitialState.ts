@@ -59,6 +59,7 @@ export function createInitialState(): GameState {
     objectives: {
       creedBeaconsLit: 0,
       fearEchoCalmed: false,
+      foldBellRung: false,
       foldRestored: false,
       gameComplete: false,
       gatheredSheep: 0,
