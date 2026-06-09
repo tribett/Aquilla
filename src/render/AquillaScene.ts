@@ -9,7 +9,7 @@ import { movePlayer } from "../game/movement";
 import { useStaffOnObject } from "../game/staff";
 import type { Direction, Encounter, GameState, Interactable, Sheep, Vector2 } from "../game/types";
 import { renderDebugOverlay } from "./debugOverlay";
-import { renderQuestHud } from "./questHud";
+import { isJournalOpen, renderQuestHud, setJournalOpen, toggleJournal } from "./questHud";
 import { buildWorldMapFromScene } from "./worldMap";
 
 const PIXEL_SCALE = 2;
@@ -85,6 +85,7 @@ export class AquillaScene extends Phaser.Scene {
     this.graphics = this.add.graphics();
     this.redrawWorld();
     this.registerKeyboardControls();
+    setJournalOpen(false);
     renderDebugOverlay(this.state);
     this.renderQuestState();
   }
@@ -102,6 +103,16 @@ export class AquillaScene extends Phaser.Scene {
 
   private registerKeyboardControls(): void {
     this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
+      if (this.handleJournalKey(event.key)) {
+        event.preventDefault();
+        return;
+      }
+
+      if (isJournalOpen()) {
+        event.preventDefault();
+        return;
+      }
+
       const direction = ARROW_DIRECTIONS[event.key];
       if (direction) {
         event.preventDefault();
@@ -113,6 +124,20 @@ export class AquillaScene extends Phaser.Scene {
 
       event.preventDefault();
     });
+  }
+
+  private handleJournalKey(key: string): boolean {
+    if (key.toLowerCase() === "j") {
+      toggleJournal();
+      return true;
+    }
+
+    if (key === "Escape" && isJournalOpen()) {
+      setJournalOpen(false);
+      return true;
+    }
+
+    return false;
   }
 
   private handleActionKey(key: string): boolean {

@@ -22,6 +22,7 @@
             <li><span class="control-copy">Arrow keys</span><span>move Aquilla</span></li>
             <li><span class="control-copy">E interact</span><span>respond to nearby prompts</span></li>
             <li><span class="control-copy">Space</span><span>same as interact</span></li>
+            <li><span class="control-copy">J journal</span><span>review the calling</span></li>
           </ul>
           <div id="quest-panel" aria-live="polite">
             <p id="quest-prompt">Move near the lost and press E.</p>
@@ -35,6 +36,18 @@
           </div>
         </aside>
         <div id="game-root" aria-label="Aquilla game canvas"></div>
+        <div id="journal-panel" role="dialog" aria-modal="true" aria-labelledby="journal-title" hidden>
+          <div class="journal-card">
+            <h2 id="journal-title">Journal</h2>
+            <p class="journal-scripture">Mercy seeks the lost; grace brings them home.</p>
+            <ul id="journal-objective-list" aria-label="Journal objectives">
+              <li id="journal-objective-sheep">Lost sheep 0/3</li>
+              <li id="journal-objective-water">Spring dry</li>
+              <li id="journal-objective-guardian">Guardian hostile</li>
+              <li id="journal-objective-fold">Fold lost</li>
+            </ul>
+          </div>
+        </div>
       </section>
     </main>
     <script type="module" src="/src/main.ts"></script>

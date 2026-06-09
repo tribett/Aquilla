@@ -14,6 +14,41 @@ function updateText(selector: string, text: string): void {
   }
 }
 
+function renderObjectiveText(objectives: Objectives): void {
+  const sheep = `Lost sheep ${objectives.gatheredSheep}/${objectives.requiredSheep}`;
+  const water = objectives.waterRestored ? "Spring restored" : "Spring dry";
+  const guardian = objectives.guardianCalmed ? "Guardian calmed" : "Guardian hostile";
+  const fold = objectives.foldRestored ? "Fold restored" : "Fold lost";
+
+  updateText("#objective-sheep", sheep);
+  updateText("#objective-water", water);
+  updateText("#objective-guardian", guardian);
+  updateText("#objective-fold", fold);
+  updateText("#journal-objective-sheep", sheep);
+  updateText("#journal-objective-water", water);
+  updateText("#journal-objective-guardian", guardian);
+  updateText("#journal-objective-fold", fold);
+}
+
+export function isJournalOpen(): boolean {
+  const journal = document.querySelector<HTMLElement>("#journal-panel");
+
+  return journal ? !journal.hidden : false;
+}
+
+export function setJournalOpen(open: boolean): void {
+  const journal = document.querySelector<HTMLElement>("#journal-panel");
+
+  if (!journal) return;
+
+  journal.hidden = !open;
+  journal.setAttribute("aria-hidden", open ? "false" : "true");
+}
+
+export function toggleJournal(): void {
+  setJournalOpen(!isJournalOpen());
+}
+
 export function renderQuestHud(state: QuestHudState): void {
   const prompt = document.querySelector<HTMLParagraphElement>("#quest-prompt");
   const message = document.querySelector<HTMLParagraphElement>("#quest-message");
@@ -26,14 +61,5 @@ export function renderQuestHud(state: QuestHudState): void {
     message.textContent = state.message;
   }
 
-  updateText(
-    "#objective-sheep",
-    `Lost sheep ${state.objectives.gatheredSheep}/${state.objectives.requiredSheep}`,
-  );
-  updateText("#objective-water", state.objectives.waterRestored ? "Spring restored" : "Spring dry");
-  updateText(
-    "#objective-guardian",
-    state.objectives.guardianCalmed ? "Guardian calmed" : "Guardian hostile",
-  );
-  updateText("#objective-fold", state.objectives.foldRestored ? "Fold restored" : "Fold lost");
+  renderObjectiveText(state.objectives);
 }
