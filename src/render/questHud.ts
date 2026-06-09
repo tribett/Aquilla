@@ -12,6 +12,7 @@ const AREA_LABELS: Record<AreaId, string> = {
   "fold-of-the-lost": "Fold of the Lost",
   "lantern-ruins": "Lantern Ruins",
   "old-pasture": "Old Pasture",
+  sanctum: "Sanctum",
 };
 
 function updateText(selector: string, text: string): void {
@@ -29,6 +30,7 @@ function renderObjectiveText(objectives: Objectives): void {
   const fold = objectives.foldRestored ? "Fold restored" : "Fold lost";
   const fear = objectives.fearEchoCalmed ? "Fear echo calmed" : "Fear echo restless";
   const creed = `Creed beacons ${objectives.creedBeaconsLit}/${objectives.requiredCreedBeacons}`;
+  const sanctum = `Sanctum witness ${objectives.sanctumWitnessSteps}/${objectives.requiredSanctumWitnessSteps}`;
 
   updateText("#objective-sheep", sheep);
   updateText("#objective-water", water);
@@ -36,12 +38,14 @@ function renderObjectiveText(objectives: Objectives): void {
   updateText("#objective-fold", fold);
   updateText("#objective-fear", fear);
   updateText("#objective-creed", creed);
+  updateText("#objective-sanctum", sanctum);
   updateText("#journal-objective-sheep", sheep);
   updateText("#journal-objective-water", water);
   updateText("#journal-objective-guardian", guardian);
   updateText("#journal-objective-fold", fold);
   updateText("#journal-objective-fear", fear);
   updateText("#journal-objective-creed", creed);
+  updateText("#journal-objective-sanctum", sanctum);
 }
 
 export function isJournalOpen(): boolean {

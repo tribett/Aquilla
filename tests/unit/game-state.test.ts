@@ -17,11 +17,14 @@ describe("createInitialState", () => {
       creedBeaconsLit: 0,
       fearEchoCalmed: false,
       foldRestored: false,
+      gameComplete: false,
       gatheredSheep: 0,
       guardianCalmed: false,
       lanternRuinsRestored: false,
       requiredCreedBeacons: 3,
+      requiredSanctumWitnessSteps: 3,
       requiredSheep: 3,
+      sanctumWitnessSteps: 0,
       waterRestored: false,
     });
   });

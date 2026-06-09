@@ -4,6 +4,8 @@ export const OLD_PASTURE_START: Vector2 = { x: 2, y: 6 };
 export const OLD_PASTURE_DOG_START: Vector2 = { x: 1, y: 6 };
 export const LANTERN_RUINS_START: Vector2 = { x: 2, y: 6 };
 export const LANTERN_RUINS_DOG_START: Vector2 = { x: 1, y: 6 };
+export const SANCTUM_START: Vector2 = { x: 2, y: 6 };
+export const SANCTUM_DOG_START: Vector2 = { x: 1, y: 6 };
 
 export function enterOldPastureIfReady(state: GameState): GameState {
   if (!state.objectives.foldRestored || state.currentArea === "old-pasture") {
@@ -46,6 +48,30 @@ export function enterLanternRuinsIfReady(state: GameState): GameState {
       ...state.player,
       facing: "right",
       position: LANTERN_RUINS_START,
+    },
+  };
+}
+
+export function enterSanctumIfReady(state: GameState): GameState {
+  if (
+    !state.objectives.lanternRuinsRestored ||
+    state.currentArea !== "lantern-ruins"
+  ) {
+    return state;
+  }
+
+  return {
+    ...state,
+    currentArea: "sanctum",
+    dog: {
+      ...state.dog,
+      command: "follow",
+      position: SANCTUM_DOG_START,
+    },
+    player: {
+      ...state.player,
+      facing: "right",
+      position: SANCTUM_START,
     },
   };
 }

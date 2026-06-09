@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { enterLanternRuinsIfReady, enterOldPastureIfReady } from "../../src/game/areas";
+import {
+  enterLanternRuinsIfReady,
+  enterOldPastureIfReady,
+  enterSanctumIfReady,
+} from "../../src/game/areas";
 import { createInitialState } from "../../src/game/createInitialState";
 
 describe("area progression", () => {
@@ -48,6 +52,32 @@ describe("area progression", () => {
     const next = enterLanternRuinsIfReady(calmedState);
 
     expect(next.currentArea).toBe("lantern-ruins");
+    expect(next.player.position).toEqual({ x: 2, y: 6 });
+    expect(next.player.facing).toBe("right");
+    expect(next.dog.position).toEqual({ x: 1, y: 6 });
+    expect(next.dog.command).toBe("follow");
+  });
+
+  it("opens the Sanctum only after the Lantern Ruins are restored", () => {
+    const initialState = createInitialState();
+    const lanternState = {
+      ...initialState,
+      currentArea: "lantern-ruins" as const,
+    };
+
+    expect(enterSanctumIfReady(lanternState)).toBe(lanternState);
+
+    const restoredState = {
+      ...lanternState,
+      objectives: {
+        ...lanternState.objectives,
+        lanternRuinsRestored: true,
+      },
+    };
+
+    const next = enterSanctumIfReady(restoredState);
+
+    expect(next.currentArea).toBe("sanctum");
     expect(next.player.position).toEqual({ x: 2, y: 6 });
     expect(next.player.facing).toBe("right");
     expect(next.dog.position).toEqual({ x: 1, y: 6 });

@@ -29,6 +29,8 @@ export function renderDebugOverlay(state: GameState): void {
     `FearEcho ${state.objectives.fearEchoCalmed ? "calmed" : "restless"}`,
     `Creed ${state.objectives.creedBeaconsLit}/${state.objectives.requiredCreedBeacons}`,
     `Ruins ${state.objectives.lanternRuinsRestored ? "restored" : "waiting"}`,
+    `Sanctum ${state.objectives.sanctumWitnessSteps}/${state.objectives.requiredSanctumWitnessSteps}`,
+    `Game ${state.objectives.gameComplete ? "complete" : "in-progress"}`,
     `Light ${AQUILLA_ART.palette.trueLight} / ${AQUILLA_ART.palette.falseLight}`,
   ].join("\n");
 }

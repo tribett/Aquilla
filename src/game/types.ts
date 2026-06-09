@@ -1,4 +1,9 @@
-export type AreaId = "briarfold" | "old-pasture" | "lantern-ruins" | "fold-of-the-lost";
+export type AreaId =
+  | "briarfold"
+  | "old-pasture"
+  | "lantern-ruins"
+  | "sanctum"
+  | "fold-of-the-lost";
 
 export type Direction = "up" | "down" | "left" | "right";
 
@@ -35,11 +40,14 @@ export interface Objectives {
   creedBeaconsLit: number;
   fearEchoCalmed: boolean;
   foldRestored: boolean;
+  gameComplete: boolean;
   gatheredSheep: number;
   guardianCalmed: boolean;
   lanternRuinsRestored: boolean;
   requiredCreedBeacons: number;
+  requiredSanctumWitnessSteps: number;
   requiredSheep: number;
+  sanctumWitnessSteps: number;
   waterRestored: boolean;
 }
 

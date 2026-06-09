@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { AQUILLA_ART } from "../art/aquillaArt";
 import { drawPixelAsset, drawTileScene, hexToNumber } from "../art/pixelRenderer";
-import { enterLanternRuinsIfReady, enterOldPastureIfReady } from "../game/areas";
+import { enterLanternRuinsIfReady, enterOldPastureIfReady, enterSanctumIfReady } from "../game/areas";
 import { createInitialState } from "../game/createInitialState";
 import {
   CREED_BEACON_ORDER,
@@ -15,6 +15,13 @@ import { commandDog, herdNearestSheep, herdSheepById } from "../game/dog";
 import { restoreFoldIfReady } from "../game/dungeon";
 import { resolveEncounter } from "../game/encounters";
 import { movePlayer } from "../game/movement";
+import {
+  completeSanctumStep,
+  getNextSanctumStepId,
+  getSanctumStepLabel,
+  SANCTUM_STEP_ORDER,
+  type SanctumStepId,
+} from "../game/sanctum";
 import { clearGameSave, loadGameSave, saveGame } from "../game/save";
 import { useStaffOnObject } from "../game/staff";
 import type { DialogueSession } from "../game/dialogue";
@@ -42,17 +49,25 @@ const LANTERN_RUINS_BEACON_POSITIONS: Record<CreedBeaconId, Vector2> = {
   maker: { x: 5, y: 5 },
   redeemer: { x: 10, y: 5 },
 };
+const LANTERN_RUINS_SANCTUM_GATE_POSITION: Vector2 = { x: 17, y: 6 };
+const SANCTUM_STEP_POSITIONS: Record<SanctumStepId, Vector2> = {
+  receive: { x: 10, y: 5 },
+  remember: { x: 5, y: 5 },
+  return: { x: 15, y: 5 },
+};
 const AREA_SCENE_MAPS: Record<AreaId, readonly string[]> = {
   briarfold: AQUILLA_ART.sceneMap,
   "fold-of-the-lost": AQUILLA_ART.sceneMap,
   "lantern-ruins": AQUILLA_ART.lanternRuinsSceneMap,
   "old-pasture": AQUILLA_ART.oldPastureSceneMap,
+  sanctum: AQUILLA_ART.sanctumSceneMap,
 };
 const AREA_WORLD_MAPS: Record<AreaId, WorldMap> = {
   briarfold: PROTOTYPE_MAP,
   "fold-of-the-lost": PROTOTYPE_MAP,
   "lantern-ruins": buildWorldMapFromScene(AQUILLA_ART.lanternRuinsSceneMap),
   "old-pasture": buildWorldMapFromScene(AQUILLA_ART.oldPastureSceneMap),
+  sanctum: buildWorldMapFromScene(AQUILLA_ART.sanctumSceneMap),
 };
 const ARROW_DIRECTIONS: Partial<Record<string, Direction>> = {
   ArrowDown: "down",
@@ -287,6 +302,11 @@ export class AquillaScene extends Phaser.Scene {
       return;
     }
 
+    if (this.state.currentArea === "sanctum") {
+      this.interactSanctum();
+      return;
+    }
+
     if (this.isNear(BRIARFOLD_ELDER_POSITION)) {
       this.openDialogue();
       return;
@@ -389,9 +409,37 @@ export class AquillaScene extends Phaser.Scene {
       return;
     }
 
+    if (
+      this.state.objectives.lanternRuinsRestored &&
+      this.isNear(LANTERN_RUINS_SANCTUM_GATE_POSITION)
+    ) {
+      this.playerMovement = undefined;
+      this.state = enterSanctumIfReady(this.state);
+      this.questMessage = "The Sanctum opens beyond the beacons: remember, receive, return.";
+      this.refreshScene();
+      return;
+    }
+
     this.questMessage = this.state.objectives.lanternRuinsRestored
       ? "The Lantern Ruins shine together: Maker, Redeemer, and Giver."
       : "Follow the ruined path and light the creed beacons in order.";
+    this.refreshScene();
+  }
+
+  private interactSanctum(): void {
+    const step = this.getNearbySanctumStep();
+
+    if (step) {
+      const result = completeSanctumStep(this.state, step);
+      this.state = result.state;
+      this.questMessage = result.message;
+      this.refreshScene();
+      return;
+    }
+
+    this.questMessage = this.state.objectives.gameComplete
+      ? "Aquilla will return to Briarfold as one sent, not as one who saved himself."
+      : "Walk the Sanctum path: remember, receive, return.";
     this.refreshScene();
   }
 
@@ -406,8 +454,15 @@ export class AquillaScene extends Phaser.Scene {
 
   private getQuestPrompt(): string {
     if (this.state.currentArea === "lantern-ruins") {
+      if (
+        this.state.objectives.lanternRuinsRestored &&
+        this.isNear(LANTERN_RUINS_SANCTUM_GATE_POSITION)
+      ) {
+        return "Press E: enter the Sanctum.";
+      }
+
       if (this.state.objectives.lanternRuinsRestored) {
-        return "The creed beacons burn together with received light.";
+        return "The creed beacons burn together. Follow the eastern path to the Sanctum.";
       }
 
       const beacon = this.getNearbyCreedBeacon();
@@ -430,6 +485,33 @@ export class AquillaScene extends Phaser.Scene {
       return nextBeacon
         ? `The ${beaconLabel} beacon waits for the ${getCreedBeaconLabel(nextBeacon)} beacon.`
         : `The ${beaconLabel} beacon waits.`;
+    }
+
+    if (this.state.currentArea === "sanctum") {
+      if (this.state.objectives.gameComplete) {
+        return "Aquilla's witness is complete; he is sent back to love the valley.";
+      }
+
+      const step = this.getNearbySanctumStep();
+      const nextStep = getNextSanctumStepId(this.state);
+
+      if (!step) {
+        return "Walk the Sanctum path: remember, receive, return.";
+      }
+
+      const stepLabel = getSanctumStepLabel(step);
+
+      if (step === nextStep) {
+        return `Press E: ${stepLabel}.`;
+      }
+
+      if (SANCTUM_STEP_ORDER.indexOf(step) < this.state.objectives.sanctumWitnessSteps) {
+        return `The ${stepLabel} witness is complete.`;
+      }
+
+      return nextStep
+        ? `The ${stepLabel} witness waits for ${getSanctumStepLabel(nextStep)}.`
+        : `The ${stepLabel} witness waits.`;
     }
 
     if (this.state.currentArea === "old-pasture") {
@@ -494,6 +576,10 @@ export class AquillaScene extends Phaser.Scene {
     return CREED_BEACON_ORDER.find((beacon) => this.isNear(LANTERN_RUINS_BEACON_POSITIONS[beacon]));
   }
 
+  private getNearbySanctumStep(): SanctumStepId | undefined {
+    return SANCTUM_STEP_ORDER.find((step) => this.isNear(SANCTUM_STEP_POSITIONS[step]));
+  }
+
   private redrawWorld(): void {
     const graphics = this.graphics ?? this.add.graphics();
     this.graphics = graphics;
@@ -554,6 +640,11 @@ export class AquillaScene extends Phaser.Scene {
 
     if (this.state.currentArea === "lantern-ruins") {
       this.drawCreedBeacons(graphics);
+      return;
+    }
+
+    if (this.state.currentArea === "sanctum") {
+      this.drawSanctumSteps(graphics);
       return;
     }
 
@@ -718,6 +809,41 @@ export class AquillaScene extends Phaser.Scene {
     graphics.strokeRect(4 * TILE_SIZE + 8, 4 * TILE_SIZE + 8, 13 * TILE_SIZE - 16, 3 * TILE_SIZE - 16);
   }
 
+  private drawSanctumSteps(graphics: Phaser.GameObjects.Graphics): void {
+    SANCTUM_STEP_ORDER.forEach((step, index) => {
+      const position = SANCTUM_STEP_POSITIONS[step];
+      const x = position.x * TILE_SIZE + 7;
+      const y = position.y * TILE_SIZE + 4;
+      const complete = index < this.state.objectives.sanctumWitnessSteps;
+      const waiting = index === this.state.objectives.sanctumWitnessSteps;
+      const glow = complete
+        ? AQUILLA_ART.palette.trueLight
+        : waiting
+          ? AQUILLA_ART.palette.falseLight
+          : AQUILLA_ART.palette.falseLightFringe;
+
+      graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+      graphics.fillRect(x, y + 16, 18, 12);
+      graphics.fillRect(x + 3, y + 8, 12, 18);
+      graphics.fillStyle(hexToNumber("#7d745a"), 1);
+      graphics.fillRect(x + 2, y + 18, 14, 6);
+      graphics.fillStyle(hexToNumber(glow), complete ? 0.95 : 0.55);
+      graphics.fillRect(x + 4, y + 2, 10, 10);
+      graphics.fillRect(x + 7, y, 4, 15);
+      graphics.fillStyle(hexToNumber(complete ? AQUILLA_ART.palette.trueLightHighlight : "#241a12"), 1);
+      graphics.fillRect(x + 8, y + 4, 2, 2);
+    });
+
+    if (!this.state.objectives.gameComplete) return;
+
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.trueLight), 0.18);
+    graphics.fillRect(2 * TILE_SIZE, 2 * TILE_SIZE, 16 * TILE_SIZE, 8 * TILE_SIZE);
+    graphics.lineStyle(4, hexToNumber(AQUILLA_ART.palette.trueLight), 0.92);
+    graphics.strokeRect(3 * TILE_SIZE, 3 * TILE_SIZE, 14 * TILE_SIZE, 6 * TILE_SIZE);
+    graphics.lineStyle(2, hexToNumber(AQUILLA_ART.palette.trueLightHighlight), 1);
+    graphics.strokeRect(3 * TILE_SIZE + 8, 3 * TILE_SIZE + 8, 14 * TILE_SIZE - 16, 6 * TILE_SIZE - 16);
+  }
+
   private getSceneMap(): readonly string[] {
     return AREA_SCENE_MAPS[this.state.currentArea];
   }
@@ -742,7 +868,7 @@ export class AquillaScene extends Phaser.Scene {
       guardian: this.guardian,
       questMessage: this.questMessage,
       state: this.state,
-      version: 2,
+      version: 3,
       waterChannel: this.waterChannel,
     });
   }
