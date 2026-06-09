@@ -14,11 +14,12 @@ describe("createInitialState", () => {
     expect(state.inventory).toContain("shepherd-staff");
     expect(state.dog.style).toBe("border-collie");
     expect(state.objectives).toEqual({
+      fearEchoCalmed: false,
+      foldRestored: false,
       gatheredSheep: 0,
+      guardianCalmed: false,
       requiredSheep: 3,
       waterRestored: false,
-      guardianCalmed: false,
-      foldRestored: false,
     });
   });
 

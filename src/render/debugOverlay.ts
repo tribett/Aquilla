@@ -26,6 +26,7 @@ export function renderDebugOverlay(state: GameState): void {
     `Water ${state.objectives.waterRestored ? "restored" : "dry"}`,
     `Guardian ${state.objectives.guardianCalmed ? "calmed" : "hostile"}`,
     `Fold ${state.objectives.foldRestored ? "restored" : "lost"}`,
+    `FearEcho ${state.objectives.fearEchoCalmed ? "calmed" : "restless"}`,
     `Light ${AQUILLA_ART.palette.trueLight} / ${AQUILLA_ART.palette.falseLight}`,
   ].join("\n");
 }

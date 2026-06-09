@@ -19,11 +19,12 @@ describe("Fold of the Lost progression", () => {
     const state = {
       ...createInitialState(),
       objectives: {
+        fearEchoCalmed: false,
+        foldRestored: false,
         gatheredSheep: 3,
+        guardianCalmed: true,
         requiredSheep: 3,
         waterRestored: true,
-        guardianCalmed: true,
-        foldRestored: false,
       },
     };
 

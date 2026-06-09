@@ -26,15 +26,18 @@ function renderObjectiveText(objectives: Objectives): void {
   const water = objectives.waterRestored ? "Spring restored" : "Spring dry";
   const guardian = objectives.guardianCalmed ? "Guardian calmed" : "Guardian hostile";
   const fold = objectives.foldRestored ? "Fold restored" : "Fold lost";
+  const fear = objectives.fearEchoCalmed ? "Fear echo calmed" : "Fear echo restless";
 
   updateText("#objective-sheep", sheep);
   updateText("#objective-water", water);
   updateText("#objective-guardian", guardian);
   updateText("#objective-fold", fold);
+  updateText("#objective-fear", fear);
   updateText("#journal-objective-sheep", sheep);
   updateText("#journal-objective-water", water);
   updateText("#journal-objective-guardian", guardian);
   updateText("#journal-objective-fold", fold);
+  updateText("#journal-objective-fear", fear);
 }
 
 export function isJournalOpen(): boolean {

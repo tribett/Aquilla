@@ -32,11 +32,12 @@ export interface Sheep extends Actor {
 }
 
 export interface Objectives {
+  fearEchoCalmed: boolean;
+  foldRestored: boolean;
   gatheredSheep: number;
+  guardianCalmed: boolean;
   requiredSheep: number;
   waterRestored: boolean;
-  guardianCalmed: boolean;
-  foldRestored: boolean;
 }
 
 export interface GameState {

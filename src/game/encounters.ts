@@ -40,6 +40,34 @@ export function resolveEncounter(
     };
   }
 
+  if (encounter.kind === "fear-echo" && encounter.state === "stunned" && action === "staff-calm") {
+    return {
+      state: {
+        ...state,
+        objectives: {
+          ...state.objectives,
+          fearEchoCalmed: true,
+        },
+      },
+      encounter: {
+        ...encounter,
+        state: "restored",
+      },
+      message: "The fear echo releases its borrowed voice and becomes still.",
+    };
+  }
+
+  if (encounter.kind === "fear-echo" && action === "staff-stun") {
+    return {
+      state,
+      encounter: {
+        ...encounter,
+        state: "stunned",
+      },
+      message: "The Shepherd's Staff steadies the fear echo without striking it.",
+    };
+  }
+
   if (action === "staff-stun") {
     return {
       state,

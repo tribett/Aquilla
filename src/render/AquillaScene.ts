@@ -27,6 +27,7 @@ const FOLD_POSITION: Vector2 = { x: 17, y: 7 };
 const BRIARFOLD_ELDER_POSITION: Vector2 = { x: 3, y: 5 };
 const GUARDIAN_POSITION: Vector2 = { x: 11, y: 5 };
 const WATER_CHANNEL_POSITION: Vector2 = { x: 7, y: 10 };
+const OLD_PASTURE_FEAR_ECHO_POSITION: Vector2 = { x: 6, y: 6 };
 const OLD_PASTURE_WAYMARK_POSITION: Vector2 = { x: 16, y: 6 };
 const AREA_SCENE_MAPS: Record<AreaId, readonly string[]> = {
   briarfold: AQUILLA_ART.sceneMap,
@@ -81,6 +82,11 @@ export class AquillaScene extends Phaser.Scene {
   private guardian: Encounter = {
     id: "fold-guardian",
     kind: "corrupted-guardian",
+    state: "hostile",
+  };
+  private fearEcho: Encounter = {
+    id: "old-pasture-fear-echo",
+    kind: "fear-echo",
     state: "hostile",
   };
   private waterChannel: Interactable = {
@@ -316,6 +322,19 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private interactOldPasture(): void {
+    if (this.isNear(OLD_PASTURE_FEAR_ECHO_POSITION) && !this.state.objectives.fearEchoCalmed) {
+      const result = resolveEncounter(
+        this.state,
+        this.fearEcho,
+        this.fearEcho.state === "stunned" ? "staff-calm" : "staff-stun",
+      );
+      this.state = result.state;
+      this.fearEcho = result.encounter;
+      this.questMessage = result.message;
+      this.refreshScene();
+      return;
+    }
+
     this.questMessage = this.isNear(OLD_PASTURE_WAYMARK_POSITION)
       ? "The eastern waymark names Elarion's road: gather, guard, restore."
       : "Briarfold lies behind you, restored; the old pasture opens toward the wider kingdom.";
@@ -333,6 +352,16 @@ export class AquillaScene extends Phaser.Scene {
 
   private getQuestPrompt(): string {
     if (this.state.currentArea === "old-pasture") {
+      if (this.isNear(OLD_PASTURE_FEAR_ECHO_POSITION)) {
+        if (this.state.objectives.fearEchoCalmed) {
+          return "The fear echo is calmed.";
+        }
+
+        return this.fearEcho.state === "stunned"
+          ? "Press E: calm the fear echo with mercy."
+          : "Press E: steady the fear echo with the staff.";
+      }
+
       return this.isNear(OLD_PASTURE_WAYMARK_POSITION)
         ? "Press E: read the eastern waymark."
         : "Explore the old pasture. The road east is newly opened.";
@@ -429,6 +458,7 @@ export class AquillaScene extends Phaser.Scene {
 
   private drawObjectiveWorldState(graphics: Phaser.GameObjects.Graphics): void {
     if (this.state.currentArea === "old-pasture") {
+      this.drawFearEcho(graphics);
       this.drawOldPastureWaymark(graphics);
       return;
     }
@@ -537,6 +567,28 @@ export class AquillaScene extends Phaser.Scene {
     graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.trueLightHighlight), 1);
     graphics.fillRect(x + 5, y, 6, 6);
     graphics.fillRect(x + 4, y + 10, 8, 2);
+  }
+
+  private drawFearEcho(graphics: Phaser.GameObjects.Graphics): void {
+    const x = OLD_PASTURE_FEAR_ECHO_POSITION.x * TILE_SIZE + 5;
+    const y = OLD_PASTURE_FEAR_ECHO_POSITION.y * TILE_SIZE + 2;
+    const restored = this.fearEcho.state === "restored";
+    const stunned = this.fearEcho.state === "stunned";
+    const bodyColor = restored
+      ? AQUILLA_ART.palette.trueLight
+      : stunned
+        ? AQUILLA_ART.palette.falseLight
+        : AQUILLA_ART.palette.falseLightFringe;
+
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 0.92);
+    graphics.fillRect(x + 5, y + 1, 12, 26);
+    graphics.fillRect(x + 1, y + 9, 20, 14);
+    graphics.fillStyle(hexToNumber(bodyColor), restored ? 0.82 : 0.95);
+    graphics.fillRect(x + 7, y, 8, 22);
+    graphics.fillRect(x + 3, y + 10, 16, 8);
+    graphics.fillStyle(hexToNumber(restored ? AQUILLA_ART.palette.trueLightHighlight : "#241a12"), 1);
+    graphics.fillRect(x + 8, y + 6, 2, 2);
+    graphics.fillRect(x + 13, y + 6, 2, 2);
   }
 
   private getSceneMap(): readonly string[] {

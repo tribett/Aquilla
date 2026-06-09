@@ -40,4 +40,18 @@ describe("resolveEncounter", () => {
     expect(result.encounter.state).toBe("restored");
     expect(result.state.objectives.guardianCalmed).toBe(true);
   });
+
+  it("restores a fear echo after the staff steadies it", () => {
+    const fearEcho: Encounter = {
+      id: "old-pasture-fear-echo",
+      kind: "fear-echo",
+      state: "stunned",
+    };
+
+    const result = resolveEncounter(createInitialState(), fearEcho, "staff-calm");
+
+    expect(result.encounter.state).toBe("restored");
+    expect(result.state.objectives.fearEchoCalmed).toBe(true);
+    expect(result.message).toBe("The fear echo releases its borrowed voice and becomes still.");
+  });
 });
