@@ -43,6 +43,7 @@ import type { DialogueSession } from "../game/dialogue";
 import type { AreaId, Creature, Direction, Encounter, GameState, Hazard, Interactable, Sheep, Vector2, WorldMap } from "../game/types";
 import { renderDebugOverlay } from "./debugOverlay";
 import { renderDialogueHud } from "./dialogueHud";
+import { isMapOpen, renderMapHud, setMapOpen, toggleMap } from "./mapHud";
 import { isJournalOpen, renderQuestHud, setJournalOpen, toggleJournal } from "./questHud";
 import { buildWorldMapFromScene } from "./worldMap";
 
@@ -159,8 +160,10 @@ export class AquillaScene extends Phaser.Scene {
     this.registerKeyboardControls();
     renderDialogueHud();
     setJournalOpen(false);
+    setMapOpen(false);
     renderDebugOverlay(this.state);
     this.renderQuestState();
+    renderMapHud(this.state);
   }
 
   update(): void {
@@ -191,12 +194,12 @@ export class AquillaScene extends Phaser.Scene {
         return;
       }
 
-      if (this.handleJournalKey(event.key)) {
+      if (this.handleOverlayKey(event.key)) {
         event.preventDefault();
         return;
       }
 
-      if (isJournalOpen()) {
+      if (isJournalOpen() || isMapOpen()) {
         event.preventDefault();
         return;
       }
@@ -237,14 +240,22 @@ export class AquillaScene extends Phaser.Scene {
     return true;
   }
 
-  private handleJournalKey(key: string): boolean {
+  private handleOverlayKey(key: string): boolean {
     if (key.toLowerCase() === "j") {
+      setMapOpen(false);
       toggleJournal();
       return true;
     }
 
-    if (key === "Escape" && isJournalOpen()) {
+    if (key.toLowerCase() === "m") {
       setJournalOpen(false);
+      toggleMap();
+      return true;
+    }
+
+    if (key === "Escape" && (isJournalOpen() || isMapOpen())) {
+      setJournalOpen(false);
+      setMapOpen(false);
       return true;
     }
 
@@ -301,6 +312,12 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private move(direction: Direction): void {
+    if (isJournalOpen() || isMapOpen()) {
+      this.playerMovement = undefined;
+      this.dogMovement = undefined;
+      return;
+    }
+
     const previousPosition = this.state.player.position;
     const renderedFrom = this.getRenderedPlayerTilePosition();
     const dogFrom = this.getRenderedDogTilePosition();
@@ -412,6 +429,7 @@ export class AquillaScene extends Phaser.Scene {
     this.redrawWorld();
     renderDebugOverlay(this.state);
     this.renderQuestState();
+    renderMapHud(this.state);
     renderDialogueHud(this.activeDialogue);
     this.persistGame();
   }
@@ -1292,6 +1310,8 @@ export class AquillaScene extends Phaser.Scene {
     this.activeDialogue = undefined;
     this.playerMovement = undefined;
     this.dogMovement = undefined;
+    setJournalOpen(false);
+    setMapOpen(false);
     this.state = createInitialState();
     this.guardian = {
       id: "fold-guardian",

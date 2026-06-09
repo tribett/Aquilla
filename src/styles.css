@@ -237,7 +237,8 @@ body {
   display: none;
 }
 
-#journal-panel[hidden] {
+#journal-panel[hidden],
+#map-panel[hidden] {
   display: none;
 }
 
@@ -245,7 +246,8 @@ body {
   display: none;
 }
 
-#journal-panel {
+#journal-panel,
+#map-panel {
   position: absolute;
   inset: 14px;
   z-index: 10;
@@ -255,7 +257,8 @@ body {
   background: rgba(20, 17, 12, 0.68);
 }
 
-.journal-card {
+.journal-card,
+.map-card {
   width: min(420px, 100%);
   padding: 16px;
   border: 2px solid rgba(224, 169, 58, 0.78);
@@ -270,11 +273,15 @@ body {
 
 .journal-card h2,
 .journal-card p,
+.map-card h2,
+.map-card p,
+#area-map-list,
 #journal-objective-list {
   margin: 0;
 }
 
-.journal-card h2 {
+.journal-card h2,
+.map-card h2 {
   color: #f3d489;
   font-size: 24px;
   line-height: 1.1;
@@ -293,6 +300,39 @@ body {
   margin-top: 14px;
   padding: 0;
   list-style: none;
+}
+
+#area-map-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 0;
+  list-style: none;
+}
+
+#area-map-list li {
+  min-height: 32px;
+  padding: 8px 10px;
+  border: 1px solid rgba(236, 224, 196, 0.14);
+  border-radius: 4px;
+  background: rgba(20, 17, 12, 0.5);
+  color: #ece0c4;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+#map-current,
+#map-next-gate,
+#map-inventory {
+  margin-top: 8px;
+  color: #d8cab0;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+#map-current {
+  color: #e0a93a;
+  font-weight: 700;
 }
 
 #journal-objective-list li {

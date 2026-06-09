@@ -7,6 +7,8 @@ describe("app shell contract", () => {
     );
 
     expect(html).toContain('<div id="game-root"');
+    expect(html).toContain('<div id="map-panel"');
+    expect(html).toContain("M map");
     expect(html).toContain("/src/main.ts");
   });
 });
