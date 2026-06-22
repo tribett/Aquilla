@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"%3E%3Crect width="16" height="16" fill="%2314110c"/%3E%3Cpath d="M8 2 12 8 8 14 4 8Z" fill="%23e0a93a"/%3E%3C/svg%3E' />
+    <title>Aquilla</title>
+    <script type="module" crossorigin src="/Aquilla/assets/index-BM3Wt3ei.js"></script>
+    <link rel="stylesheet" crossorigin href="/Aquilla/assets/index-DhS9_zDO.css">
+  </head>
+  <body data-game="aquilla">
+    <main class="page-shell" aria-labelledby="aquilla-title">
+      <section class="story-panel" aria-label="Aquilla introduction">
+        <h1 id="aquilla-title">Aquilla</h1>
+        <div class="story-copy">
+          <p class="tagline">Gather. Guard. Restore.</p>
+          <p class="flavor">Mercy leads the lost home; grace is received, not earned.</p>
+          <p class="launch-hint">Press <strong>E</strong> when Elder Mara speaks to begin your witness.</p>
+        </div>
+      </section>
+      <section class="prototype-shell game-shell" aria-label="Playable game">
+        <aside class="controls-panel" aria-label="Controls">
+          <h2>Controls</h2>
+          <ul class="controls-list">
+            <li><span class="control-copy">Arrow keys</span><span>move Aquilla</span></li>
+            <li><span class="control-copy">E interact</span><span>respond to nearby prompts</span></li>
+            <li><span class="control-copy">D distract</span><span>send Bracken to draw danger away</span></li>
+            <li><span class="control-copy">F fetch</span><span>send the sheepdog ahead</span></li>
+            <li><span class="control-copy">S stay</span><span>toggle sheepdog follow</span></li>
+            <li><span class="control-copy">Space</span><span>same as interact</span></li>
+            <li><span class="control-copy">J journal</span><span>review the calling</span></li>
+            <li><span class="control-copy">M map</span><span>trace the open road</span></li>
+            <li><span class="control-copy">N reset</span><span>start a new save</span></li>
+          </ul>
+          <div id="quest-panel" aria-live="polite">
+            <p id="area-label">Area: Briarfold</p>
+            <p id="quest-prompt">Move near the lost and press E.</p>
+            <p id="quest-message">Seek the scattered sheep, restore the spring, and make the Fold ready.</p>
+            <ul id="objective-list" aria-label="Current objectives">
+              <li id="objective-sheep">Lost sheep 0/3</li>
+              <li id="objective-water">Spring dry</li>
+              <li id="objective-guardian">Guardian hostile</li>
+              <li id="objective-bell">Fold bell silent</li>
+              <li id="objective-fold">Fold lost</li>
+              <li id="objective-fear">Fear echo restless</li>
+              <li id="objective-creed">Creed beacons 0/3</li>
+              <li id="objective-sanctum">Sanctum witness 0/3</li>
+              <li id="objective-thorns">Thorn snares 0/2</li>
+              <li id="objective-prowlers">Prowlers restored 0/1</li>
+              <li id="objective-grove">Hidden grove hidden</li>
+              <li id="objective-homecoming">Journey outward</li>
+              <li id="objective-story">Story unfolding</li>
+              <li id="objective-inventory">Inventory: Staff</li>
+            </ul>
+          </div>
+        </aside>
+        <div id="game-root" aria-label="Aquilla game canvas"></div>
+        <div id="journal-panel" role="dialog" aria-modal="true" aria-labelledby="journal-title" hidden>
+          <div class="journal-card">
+            <h2 id="journal-title">Journal</h2>
+            <p class="journal-scripture">Mercy seeks the lost; grace brings them home.</p>
+            <ul id="journal-objective-list" aria-label="Journal objectives">
+              <li id="journal-objective-sheep">Lost sheep 0/3</li>
+              <li id="journal-objective-water">Spring dry</li>
+              <li id="journal-objective-guardian">Guardian hostile</li>
+              <li id="journal-objective-bell">Fold bell silent</li>
+              <li id="journal-objective-fold">Fold lost</li>
+              <li id="journal-objective-fear">Fear echo restless</li>
+              <li id="journal-objective-creed">Creed beacons 0/3</li>
+              <li id="journal-objective-sanctum">Sanctum witness 0/3</li>
+              <li id="journal-objective-thorns">Thorn snares 0/2</li>
+              <li id="journal-objective-prowlers">Prowlers restored 0/1</li>
+              <li id="journal-objective-grove">Hidden grove hidden</li>
+              <li id="journal-objective-homecoming">Journey outward</li>
+              <li id="journal-objective-story">Story unfolding</li>
+              <li id="journal-objective-inventory">Inventory: Staff</li>
+            </ul>
+            <h3 class="journal-subtitle">Achievements</h3>
+            <ul id="journal-achievement-list" aria-label="Achievement progress"></ul>
+            <h3 class="journal-subtitle">Eight Dungeons</h3>
+            <ul id="journal-dungeon-list" aria-label="Dungeon progress"></ul>
+            <h3 class="journal-subtitle">Story</h3>
+            <ul id="journal-story-list" aria-label="Story progress"></ul>
+          </div>
+        </div>
+        <div id="map-panel" role="dialog" aria-modal="true" aria-labelledby="map-title" hidden>
+          <div class="map-card">
+            <h2 id="map-title">Area Map</h2>
+            <p id="map-current">Current: Briarfold</p>
+            <p id="map-next-gate">Next gate: Restore the Fold to open the Old Pasture.</p>
+            <ol id="area-map-list" aria-label="Area route">
+              <li id="map-area-briarfold">Briarfold current</li>
+              <li id="map-area-old-pasture">Old Pasture locked</li>
+              <li id="map-area-lantern-ruins">Lantern Ruins locked</li>
+              <li id="map-area-sanctum">Sanctum locked</li>
+            </ol>
+            <p id="map-inventory">Inventory: Staff</p>
+          </div>
+        </div>
+        <div id="dialogue-panel" role="dialog" aria-modal="true" aria-labelledby="dialogue-speaker" hidden>
+          <div class="dialogue-card">
+            <p id="dialogue-speaker">Elder Mara</p>
+            <p id="dialogue-text">Mercy is not weakness.</p>
+            <p class="dialogue-hint">Press E to continue</p>
+          </div>
+        </div>
+        <div id="ending-panel" role="dialog" aria-modal="true" aria-labelledby="ending-title" hidden>
+          <div class="ending-card">
+            <p class="ending-eyebrow">Gather · Guard · Restore</p>
+            <h2 id="ending-title">Aquilla</h2>
+            <p class="ending-lead">The kingdom is restored. Aquilla returns home as one sent through five chapters of mercy.</p>
+            <p class="ending-copy">From Briarfold to Elarion, false light broke against received grace. The Crown Witness is complete — gather, guard, restore, wherever the Shepherd calls.</p>
+            <p class="ending-scripture">The Shepherd sends restored servants back to love what remains broken.</p>
+            <p class="ending-hint">Press N to begin again, or keep exploring Briarfold.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
