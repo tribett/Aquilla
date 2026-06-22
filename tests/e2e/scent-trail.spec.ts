@@ -38,7 +38,7 @@ async function enterOldPasture(page: Page): Promise<void> {
 }
 
 test("tracks an old scent trail into a hidden grove with the sheepdog", async ({ page }) => {
-  await page.goto("/?motion=120");
+  await page.goto("/?skipTitle=1&motion=120&skipIntro=1");
 
   const debugState = page.locator("#debug-state");
   const inventoryObjective = page.locator("#objective-inventory");

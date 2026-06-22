@@ -38,7 +38,7 @@ async function enterOldPasture(page: Page): Promise<void> {
 }
 
 test("restores the Old Pasture fear echo without killing it", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
 
   const debugState = page.locator("#debug-state");
   const questPrompt = page.locator("#quest-prompt");

@@ -64,6 +64,9 @@ describe("createInitialState", () => {
       requiredThornProwlers: 1,
       thornSnaresCleared: 0,
       thornProwlersRestored: 0,
+      returnedHome: false,
+      introSeen: false,
+      storyComplete: false,
       waterRestored: false,
     });
   });

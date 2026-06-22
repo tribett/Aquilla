@@ -11,8 +11,23 @@ async function followPath(page: Page, keys: string[]): Promise<void> {
   }
 }
 
+async function walkUntilDebugContains(page: Page, text: string, key: string, maxSteps = 20): Promise<void> {
+  const debugState = page.locator("#debug-state");
+
+  for (let step = 0; step < maxSteps; step += 1) {
+    const content = await debugState.textContent();
+    if (content?.includes(text)) return;
+
+    await pressAndSettle(page, key);
+
+    if ((await debugState.textContent())?.includes(text)) return;
+  }
+
+  await expect(debugState).toContainText(text);
+}
+
 test("plays the Fold loop through proximity prompts and one interact key", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1&motion=120");
 
   const questPrompt = page.locator("#quest-prompt");
   const questMessage = page.locator("#quest-message");
@@ -25,7 +40,7 @@ test("plays the Fold loop through proximity prompts and one interact key", async
   const bellObjective = page.locator("#objective-bell");
 
   await expect(sheepObjective).toContainText("Lost sheep 0/3");
-  await expect(areaLabel).toContainText("Area: Briarfold");
+  await expect(areaLabel).toContainText("Briarfold");
   await expect(waterObjective).toContainText("Spring dry");
   await expect(guardianObjective).toContainText("Guardian hostile");
   await expect(foldObjective).toContainText("Fold lost");
@@ -71,15 +86,22 @@ test("plays the Fold loop through proximity prompts and one interact key", async
   await expect(debugState).toContainText("Bell rung");
   await expect(bellObjective).toContainText("Fold bell rung");
   await page.keyboard.press("E");
+  await expect(debugState).toContainText("Area fold-of-the-lost");
+
+  await walkUntilDebugContains(page, "Room fold-heart", "ArrowRight");
+  await followPath(page, ["ArrowRight", "ArrowRight", "ArrowRight", "ArrowUp"]);
+  await page.keyboard.press("E");
   await expect(debugState).toContainText("Fold restored");
+  await expect(debugState).toContainText("Area briarfold");
   await expect(foldObjective).toContainText("Fold restored");
   await expect(questMessage).toContainText("Fold");
 
+  await followPath(page, ["ArrowRight"]);
   await page.keyboard.press("E");
 
   await expect(debugState).toContainText("Area old-pasture");
   await expect(debugState).toContainText("Aquilla 2,6");
-  await expect(areaLabel).toContainText("Area: Old Pasture");
+  await expect(areaLabel).toContainText("Old Pasture");
   await expect(questPrompt).toContainText("Explore the old pasture");
   await expect(questMessage).toContainText("Briarfold lies behind");
 });

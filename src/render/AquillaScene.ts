@@ -1,7 +1,10 @@
 import Phaser from "phaser";
 import { AQUILLA_ART } from "../art/aquillaArt";
 import { drawPixelAsset, drawTileScene, hexToNumber } from "../art/pixelRenderer";
-import { enterLanternRuinsIfReady, enterOldPastureIfReady, enterSanctumIfReady } from "../game/areas";
+import { enterAshfordIfReady, enterFoldDungeonIfReady, enterLanternRuinsIfReady, enterOldPastureIfReady, enterSanctumIfReady, returnToBriarfoldFromSanctum } from "../game/areas";
+import { getSideQuestLog } from "../game/sideQuests";
+import { getAchievementLog } from "../game/achievements";
+import { playChapter, playHarpNote as playHarpTone, playRestore, playStep, playVictory } from "../game/audio";
 import { createInitialState } from "../game/createInitialState";
 import {
   CREED_BEACON_ORDER,
@@ -10,10 +13,47 @@ import {
   lightCreedBeacon,
   type CreedBeaconId,
 } from "../game/creedBeacons";
-import { advanceDialogue, BRIARFOLD_ELDER_DIALOGUE, createDialogueSession } from "../game/dialogue";
-import { commandDog, fetchNearestLostSheep, herdNearestSheep, herdSheepById, trailDogAfterPlayerMove } from "../game/dog";
+import { ensureEpicAreaContent, getActiveEpicCreatures, getActiveEpicHazards } from "../game/areaContent";
+import { canWitnessCrownFinale } from "../game/crownWitness";
+import {
+  ASHFORD_GUIDE_DIALOGUE,
+  advanceDialogue,
+  BRIARFOLD_ELDER_DIALOGUE,
+  CROWN_WITNESS_DIALOGUE,
+  createDialogueSession,
+  FINALE_DIALOGUE,
+  OPENING_DIALOGUE,
+} from "../game/dialogue";
+import { commandDog, fetchNearestLostSheep, getThreatWarning, herdNearestSheep, herdSheepById, trailDogAfterPlayerMove } from "../game/dog";
+import { canReturnHomeFromSanctum, canWitnessFinale, completeStory } from "../game/ending";
+import { completeFoldDungeon, unlockAshenMoor } from "../game/epicAreas";
+import {
+  interactAshfordCrossing,
+  interactElarionGate,
+  interactEmberFen,
+  interactAshenSpire,
+  interactForgottenCathedral as interactCathedral,
+  interactKingsroadPass,
+  interactLucentSanctum,
+  interactMonasticRuins as interactMonastic,
+  pressHarpKey,
+  type EpicInteractResult,
+} from "../game/epicInteract";
+import { ASHFORD_GUIDE_POSITION } from "../game/epicPositions";
+import { getChapterFromState, setFlag } from "../game/flags";
+import { completeCrownWitness } from "../game/crownWitness";
 import { restoreFoldIfReady } from "../game/dungeon";
-import { resolveEncounter } from "../game/encounters";
+import { FOLD_ENTRANCE_STONE_POSITION, isFoldEntranceStoneMoved, withFoldStoneCollision } from "../game/foldStone";
+import {
+  advanceShadowWolves,
+  distractOrRestoreShadowWolf,
+  resolveShadowWolfStep,
+} from "../game/shadowWolves";
+import { getDungeonMapLines } from "../content/dungeons/registry";
+import { getJournalStoryBeats, markIntroSeen } from "../game/journal";
+import { getActiveMainQuest, getChapterTitle, getQuestLog } from "../game/quests";
+import { tryRoomTransition } from "../game/rooms";
+import { getRoomLabel, getSceneMapForState } from "../game/worldView";
 import { resolveHazardStep, restoreThornSnare } from "../game/hazards";
 import { movePlayer } from "../game/movement";
 import { advanceProwlers, distractOrRestoreProwler, resolveProwlerStep } from "../game/prowlers";
@@ -25,6 +65,7 @@ import {
   type SanctumStepId,
 } from "../game/sanctum";
 import { clearGameSave, loadGameSave, saveGame } from "../game/save";
+import { getTestPresetState, readTestPresetFromUrl } from "../game/testPresets";
 import {
   canTrackOldPastureScent,
   HIDDEN_GROVE_POSITION,
@@ -39,13 +80,18 @@ import {
   withShepherdGateCollision,
 } from "../game/shepherdGate";
 import { useStaffOnObject } from "../game/staff";
-import type { DialogueSession } from "../game/dialogue";
-import type { AreaId, Creature, Direction, Encounter, GameState, Hazard, Interactable, Sheep, Vector2, WorldMap } from "../game/types";
-import { renderDebugOverlay } from "./debugOverlay";
+import type { DialogueLine, DialogueSession } from "../game/dialogue";
+import type { Creature, Direction, Encounter, GameState, Hazard, Interactable, Sheep, Vector2, WorldMap } from "../game/types";
+import { resolveEncounter } from "../game/encounters";
+import { renderEndingHud, isEndingVisible } from "./endingHud";
 import { renderDialogueHud } from "./dialogueHud";
 import { isMapOpen, renderMapHud, setMapOpen, toggleMap } from "./mapHud";
 import { isJournalOpen, renderQuestHud, setJournalOpen, toggleJournal } from "./questHud";
+import { renderDebugOverlay } from "./debugOverlay";
+import { createRestoreBurst, drawParticleBursts, pruneParticleBursts, type ParticleBurst } from "./particles";
 import { buildWorldMapFromScene } from "./worldMap";
+
+type DialogueKind = "ashford" | "crown" | "elder" | "finale" | "opening";
 
 const PIXEL_SCALE = 2;
 const TILE_SIZE = 16 * PIXEL_SCALE;
@@ -53,7 +99,10 @@ const SCENE_WIDTH = 20 * TILE_SIZE;
 const SCENE_HEIGHT = 13 * TILE_SIZE;
 const INTERACTION_RANGE = 1.5;
 const DEFAULT_PLAYER_MOVE_DURATION_MS = 260;
-const PROTOTYPE_MAP = buildWorldMapFromScene(AQUILLA_ART.sceneMap);
+const SANCTUM_EXIT_POSITION: Vector2 = { x: 2, y: 9 };
+const SHRINE_POSITION: Vector2 = { x: 8, y: 9 };
+const FOLD_HEART_SHRINE_POSITION: Vector2 = { x: 5, y: 5 };
+const FOLD_THORN_BEAST_POSITION: Vector2 = { x: 8, y: 9 };
 const FOLD_POSITION: Vector2 = { x: 17, y: 7 };
 const FOLD_BELL_POSITION: Vector2 = { x: 16, y: 6 };
 const BRIARFOLD_ELDER_POSITION: Vector2 = { x: 3, y: 5 };
@@ -62,29 +111,15 @@ const WATER_CHANNEL_POSITION: Vector2 = { x: 7, y: 10 };
 const OLD_PASTURE_FEAR_ECHO_POSITION: Vector2 = { x: 6, y: 6 };
 const OLD_PASTURE_WAYMARK_POSITION: Vector2 = { x: 16, y: 6 };
 const LANTERN_RUINS_BEACON_POSITIONS: Record<CreedBeaconId, Vector2> = {
-  giver: { x: 15, y: 5 },
-  maker: { x: 5, y: 5 },
-  redeemer: { x: 10, y: 5 },
+  giver: { x: 16, y: 9 },
+  maker: { x: 5, y: 9 },
+  redeemer: { x: 10, y: 9 },
 };
-const LANTERN_RUINS_SANCTUM_GATE_POSITION: Vector2 = { x: 17, y: 6 };
+const LANTERN_RUINS_SANCTUM_GATE_POSITION: Vector2 = { x: 18, y: 9 };
 const SANCTUM_STEP_POSITIONS: Record<SanctumStepId, Vector2> = {
-  receive: { x: 10, y: 5 },
-  remember: { x: 5, y: 5 },
-  return: { x: 15, y: 5 },
-};
-const AREA_SCENE_MAPS: Record<AreaId, readonly string[]> = {
-  briarfold: AQUILLA_ART.sceneMap,
-  "fold-of-the-lost": AQUILLA_ART.sceneMap,
-  "lantern-ruins": AQUILLA_ART.lanternRuinsSceneMap,
-  "old-pasture": AQUILLA_ART.oldPastureSceneMap,
-  sanctum: AQUILLA_ART.sanctumSceneMap,
-};
-const AREA_WORLD_MAPS: Record<AreaId, WorldMap> = {
-  briarfold: PROTOTYPE_MAP,
-  "fold-of-the-lost": PROTOTYPE_MAP,
-  "lantern-ruins": buildWorldMapFromScene(AQUILLA_ART.lanternRuinsSceneMap),
-  "old-pasture": buildWorldMapFromScene(AQUILLA_ART.oldPastureSceneMap),
-  sanctum: buildWorldMapFromScene(AQUILLA_ART.sanctumSceneMap),
+  receive: { x: 10, y: 9 },
+  remember: { x: 5, y: 9 },
+  return: { x: 16, y: 9 },
 };
 const ARROW_DIRECTIONS: Partial<Record<string, Direction>> = {
   ArrowDown: "down",
@@ -125,6 +160,10 @@ function getPlayerMoveDurationMs(): number {
   return DEFAULT_PLAYER_MOVE_DURATION_MS;
 }
 
+function shouldSkipIntro(): boolean {
+  return new URLSearchParams(window.location.search).get("skipIntro") === "1";
+}
+
 export class AquillaScene extends Phaser.Scene {
   private state: GameState = createInitialState();
   private guardian: Encounter = {
@@ -137,6 +176,11 @@ export class AquillaScene extends Phaser.Scene {
     kind: "fear-echo",
     state: "hostile",
   };
+  private thornBeast: Encounter = {
+    id: "fold-thorn-beast",
+    kind: "thorn-beast",
+    state: "hostile",
+  };
   private waterChannel: Interactable = {
     id: "dry-channel",
     kind: "water-channel",
@@ -144,9 +188,12 @@ export class AquillaScene extends Phaser.Scene {
   };
   private graphics?: Phaser.GameObjects.Graphics;
   private activeDialogue?: DialogueSession;
+  private dialogueKind?: DialogueKind;
   private playerMovement?: PlayerMovementAnimation;
   private dogMovement?: PlayerMovementAnimation;
   private questMessage = INITIAL_QUEST_MESSAGE;
+  private endingOverlaySuppressed = false;
+  private particleBursts: ParticleBurst[] = [];
 
   constructor() {
     super("AquillaScene");
@@ -164,6 +211,15 @@ export class AquillaScene extends Phaser.Scene {
     renderDebugOverlay(this.state);
     this.renderQuestState();
     renderMapHud(this.state);
+    this.maybeStartOpeningDialogue();
+    renderEndingHud(this.shouldShowEndingHud());
+  }
+
+  private shouldShowEndingHud(): boolean {
+    return (
+      (this.state.objectives.storyComplete || this.state.flags.crownWitnessComplete) &&
+      !this.endingOverlaySuppressed
+    );
   }
 
   update(): void {
@@ -199,7 +255,7 @@ export class AquillaScene extends Phaser.Scene {
         return;
       }
 
-      if (isJournalOpen() || isMapOpen()) {
+      if (isJournalOpen() || isMapOpen() || isEndingVisible()) {
         event.preventDefault();
         return;
       }
@@ -233,7 +289,7 @@ export class AquillaScene extends Phaser.Scene {
         return true;
       }
 
-      renderDialogueHud(this.activeDialogue);
+      renderDialogueHud(this.activeDialogue, this.getDialogueHint());
       return true;
     }
 
@@ -256,6 +312,12 @@ export class AquillaScene extends Phaser.Scene {
     if (key === "Escape" && (isJournalOpen() || isMapOpen())) {
       setJournalOpen(false);
       setMapOpen(false);
+      return true;
+    }
+
+    if (key === "Escape" && isEndingVisible()) {
+      this.endingOverlaySuppressed = true;
+      renderEndingHud(false);
       return true;
     }
 
@@ -306,13 +368,23 @@ export class AquillaScene extends Phaser.Scene {
         this.refreshScene();
         return true;
       }
+      case "1":
+      case "2":
+      case "3":
+      case "4":
+      case "5": {
+        const result = pressHarpKey(this.state, key as "1" | "2" | "3" | "4" | "5");
+        if (!result.message) return false;
+        this.applyEpicResult(result);
+        return true;
+      }
       default:
         return false;
     }
   }
 
   private move(direction: Direction): void {
-    if (isJournalOpen() || isMapOpen()) {
+    if (isJournalOpen() || isMapOpen() || isEndingVisible()) {
       this.playerMovement = undefined;
       this.dogMovement = undefined;
       return;
@@ -324,13 +396,18 @@ export class AquillaScene extends Phaser.Scene {
     const previousDogPosition = this.state.dog.position;
     const movedState = movePlayer(this.state, direction, this.getWorldMap());
     const prowlerResult = resolveProwlerStep(movedState, previousPosition);
+    const shadowWolfResult = resolveShadowWolfStep(prowlerResult.state, previousPosition);
     const hazardResult = prowlerResult.message
       ? prowlerResult
-      : resolveHazardStep(prowlerResult.state, previousPosition);
+      : shadowWolfResult.message
+        ? shadowWolfResult
+        : resolveHazardStep(shadowWolfResult.state, previousPosition);
     const stateAfterDogMovement = hazardResult.message
       ? hazardResult.state
       : trailDogAfterPlayerMove(hazardResult.state, previousPosition);
-    this.state = hazardResult.message ? stateAfterDogMovement : advanceProwlers(stateAfterDogMovement);
+    this.state = hazardResult.message
+      ? stateAfterDogMovement
+      : advanceShadowWolves(advanceProwlers(stateAfterDogMovement));
     const nextPosition = this.state.player.position;
     const nextDogPosition = this.state.dog.position;
     const moved =
@@ -365,6 +442,26 @@ export class AquillaScene extends Phaser.Scene {
     } else {
       this.playerMovement = undefined;
       this.dogMovement = undefined;
+
+      if (!hazardResult.message) {
+        const transition = tryRoomTransition(this.state, direction, true);
+        if (transition) {
+          this.state = transition.state;
+          this.questMessage = transition.message;
+          playChapter(getChapterFromState(this.state));
+        }
+      }
+    }
+
+    if (moved) {
+      playStep();
+    }
+
+    if (!hazardResult.message) {
+      const warning = getThreatWarning(this.state);
+      if (warning) {
+        this.questMessage = warning;
+      }
     }
 
     this.refreshScene();
@@ -426,15 +523,104 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private refreshScene(): void {
+    this.state = ensureEpicAreaContent(this.state);
     this.redrawWorld();
     renderDebugOverlay(this.state);
     this.renderQuestState();
     renderMapHud(this.state);
-    renderDialogueHud(this.activeDialogue);
+    renderDialogueHud(this.activeDialogue, this.getDialogueHint());
+    renderEndingHud(this.shouldShowEndingHud());
     this.persistGame();
   }
 
+  private applyEpicResult(result: EpicInteractResult): void {
+    this.state = result.state;
+    this.questMessage = result.message;
+
+    if (result.frequency) {
+      playHarpTone(result.frequency);
+    }
+
+    if (result.playRestore) {
+      playRestore();
+      this.spawnRestoreBurst();
+    }
+
+    if (result.playVictory) {
+      playVictory();
+      this.spawnRestoreBurst();
+    }
+
+    this.refreshScene();
+  }
+
+  private spawnRestoreBurst(): void {
+    const position = this.getRenderedPlayerTilePosition();
+    this.particleBursts.push(
+      createRestoreBurst(
+        position.x * TILE_SIZE + TILE_SIZE / 2,
+        position.y * TILE_SIZE + TILE_SIZE / 2,
+      ),
+    );
+  }
+
   private interact(): void {
+    if (this.state.currentArea === "fold-of-the-lost") {
+      this.interactFoldDungeon();
+      return;
+    }
+
+    const epicSentinel = this.getNearbyEpicSentinel();
+    if (epicSentinel) {
+      this.interactEpicSentinel(epicSentinel);
+      return;
+    }
+
+    if (this.state.currentArea === "ashford-crossing") {
+      if (this.isNear(ASHFORD_GUIDE_POSITION) && !this.state.flags.ashfordMet) {
+        this.openDialogue(ASHFORD_GUIDE_DIALOGUE, "ashford");
+        return;
+      }
+
+      this.applyEpicResult(interactAshfordCrossing(this.state));
+      return;
+    }
+
+    if (this.state.currentArea === "ember-fen") {
+      this.applyEpicResult(interactEmberFen(this.state));
+      return;
+    }
+
+    if (this.state.currentArea === "ashen-spire") {
+      this.applyEpicResult(interactAshenSpire(this.state));
+      return;
+    }
+
+    if (this.state.currentArea === "kingsroad-pass") {
+      this.applyEpicResult(interactKingsroadPass(this.state));
+      return;
+    }
+
+    if (this.state.currentArea === "monastic-ruins") {
+      this.applyEpicResult(interactMonastic(this.state));
+      return;
+    }
+
+    if (this.state.currentArea === "elarion-gate") {
+      this.applyEpicResult(interactElarionGate(this.state));
+      return;
+    }
+
+    if (this.state.currentArea === "forgotten-cathedral") {
+      this.applyEpicResult(interactCathedral(this.state));
+      return;
+    }
+
+    if (this.state.currentArea === "lucent-sanctum") {
+      this.applyEpicResult(interactLucentSanctum(this.state));
+      return;
+    }
+
     if (this.state.currentArea === "old-pasture") {
       this.interactOldPasture();
       return;
@@ -469,7 +655,13 @@ export class AquillaScene extends Phaser.Scene {
     }
 
     if (this.isNear(BRIARFOLD_ELDER_POSITION)) {
-      this.openDialogue();
+      if (canWitnessCrownFinale(this.state)) {
+        this.openDialogue(CROWN_WITNESS_DIALOGUE, "crown");
+      } else if (canWitnessFinale(this.state)) {
+        this.openDialogue(FINALE_DIALOGUE, "finale");
+      } else {
+        this.openDialogue(BRIARFOLD_ELDER_DIALOGUE, "elder");
+      }
       return;
     }
 
@@ -517,11 +709,28 @@ export class AquillaScene extends Phaser.Scene {
     }
 
     if (this.isNear(FOLD_POSITION)) {
+      if (this.state.objectives.storyComplete && this.state.flags.ashenMoorUnlocked) {
+        this.state = enterAshfordIfReady(this.state);
+        this.questMessage = "Chapter II opens: Aquilla crosses into Ashen Moor.";
+        playChapter(2);
+        this.refreshScene();
+        return;
+      }
+
       if (this.state.objectives.foldRestored) {
         this.playerMovement = undefined;
         this.dogMovement = undefined;
         this.state = enterOldPastureIfReady(this.state);
         this.questMessage = "Briarfold lies behind you, restored; the old pasture opens toward the wider kingdom.";
+        this.refreshScene();
+        return;
+      }
+
+      if (this.state.objectives.foldBellRung && !this.state.flags.foldDungeonComplete) {
+        this.playerMovement = undefined;
+        this.dogMovement = undefined;
+        this.state = enterFoldDungeonIfReady(this.state);
+        this.questMessage = "The Fold of the Lost opens before Aquilla like a wounded refuge.";
         this.refreshScene();
         return;
       }
@@ -588,16 +797,6 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private interactLanternRuins(): void {
-    const beacon = this.getNearbyCreedBeacon();
-
-    if (beacon) {
-      const result = lightCreedBeacon(this.state, beacon);
-      this.state = result.state;
-      this.questMessage = result.message;
-      this.refreshScene();
-      return;
-    }
-
     if (
       this.state.objectives.lanternRuinsRestored &&
       this.isNear(LANTERN_RUINS_SANCTUM_GATE_POSITION)
@@ -610,6 +809,16 @@ export class AquillaScene extends Phaser.Scene {
       return;
     }
 
+    const beacon = this.getNearbyCreedBeacon();
+
+    if (beacon) {
+      const result = lightCreedBeacon(this.state, beacon);
+      this.state = result.state;
+      this.questMessage = result.message;
+      this.refreshScene();
+      return;
+    }
+
     this.questMessage = this.state.objectives.lanternRuinsRestored
       ? "The Lantern Ruins shine together: Maker, Redeemer, and Giver."
       : "Follow the ruined path and light the creed beacons in order.";
@@ -617,6 +826,15 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private interactSanctum(): void {
+    if (canReturnHomeFromSanctum(this.state) && this.isNear(SANCTUM_EXIT_POSITION)) {
+      this.playerMovement = undefined;
+      this.dogMovement = undefined;
+      this.state = returnToBriarfoldFromSanctum(this.state);
+      this.questMessage = "Aquilla walks home through the green road, sent in mercy rather than pride.";
+      this.refreshScene();
+      return;
+    }
+
     const step = this.getNearbySanctumStep();
 
     if (step) {
@@ -627,19 +845,29 @@ export class AquillaScene extends Phaser.Scene {
       return;
     }
 
-    this.questMessage = this.state.objectives.gameComplete
+    this.questMessage = this.state.objectives.storyComplete
       ? "Aquilla will return to Briarfold as one sent, not as one who saved himself."
-      : "Walk the Sanctum path: remember, receive, return.";
+      : this.state.objectives.gameComplete
+        ? "The witness is complete. Return through the Sanctum threshold to Briarfold."
+        : "Walk the Sanctum path: remember, receive, return.";
     this.refreshScene();
   }
 
   private renderQuestState(): void {
+    const activeQuest = getActiveMainQuest(this.state);
+    const chapterTitle = getChapterTitle(getChapterFromState(this.state));
+
     renderQuestHud({
-      currentArea: this.state.currentArea,
+      achievementLines: getAchievementLog(this.state),
+      chapterTitle,
+      dungeonLines: getDungeonMapLines(this.state),
       inventory: this.state.inventory,
       message: this.questMessage,
       objectives: this.state.objectives,
       prompt: this.getQuestPrompt(),
+      questLabel: activeQuest?.label ?? "Explore Elarion",
+      roomLabel: getRoomLabel(this.state),
+      storyBeats: [...getJournalStoryBeats(this.state), ...getQuestLog(this.state), ...getSideQuestLog(this.state)],
     });
   }
 
@@ -679,8 +907,16 @@ export class AquillaScene extends Phaser.Scene {
     }
 
     if (this.state.currentArea === "sanctum") {
-      if (this.state.objectives.gameComplete) {
+      if (this.state.objectives.storyComplete) {
         return "Aquilla's witness is complete; he is sent back to love the valley.";
+      }
+
+      if (canReturnHomeFromSanctum(this.state) && this.isNear(SANCTUM_EXIT_POSITION)) {
+        return "Press E: return to Briarfold.";
+      }
+
+      if (this.state.objectives.gameComplete) {
+        return "Walk west to the Sanctum threshold and return home.";
       }
 
       const step = this.getNearbySanctumStep();
@@ -752,6 +988,10 @@ export class AquillaScene extends Phaser.Scene {
     }
 
     if (this.isNear(BRIARFOLD_ELDER_POSITION)) {
+      if (canWitnessFinale(this.state)) {
+        return "Press E: speak with Elder Mara and close the witness.";
+      }
+
       return "Press E: speak with Elder Mara.";
     }
 
@@ -816,13 +1056,88 @@ export class AquillaScene extends Phaser.Scene {
   private getNearbyActiveProwler(): Creature | undefined {
     if (this.state.currentArea !== "briarfold") return undefined;
 
-    return this.state.creatures.find((creature) => creature.state !== "restored" && this.isNear(creature.position));
+    return getActiveEpicCreatures(this.state).find(
+      (creature) =>
+        creature.kind === "thorn-prowler" &&
+        creature.state !== "restored" &&
+        this.isNear(creature.position),
+    );
+  }
+
+  private getNearbyShadowWolf(): Creature | undefined {
+    if (this.state.currentArea !== "fold-of-the-lost" || this.state.currentRoom !== "fold-inner") {
+      return undefined;
+    }
+
+    return getActiveEpicCreatures(this.state).find(
+      (creature) =>
+        creature.kind === "shadow-wolf" &&
+        creature.state !== "restored" &&
+        this.isNear(creature.position),
+    );
+  }
+
+  private getNearbyEpicSentinel(): Creature | undefined {
+    return getActiveEpicCreatures(this.state).find(
+      (creature) =>
+        creature.kind === "false-light-sentinel" &&
+        creature.state !== "restored" &&
+        this.isNear(creature.position),
+    );
   }
 
   private getNearbyActiveThornSnare(): Hazard | undefined {
-    if (this.state.currentArea !== "briarfold") return undefined;
+    if (this.state.currentArea !== "briarfold" && this.state.currentArea !== "kingsroad-pass") {
+      return undefined;
+    }
 
-    return this.state.hazards.find((hazard) => hazard.active && this.isNear(hazard.position));
+    return getActiveEpicHazards(this.state).find(
+      (hazard) => hazard.active && this.isNear(hazard.position),
+    );
+  }
+
+  private interactEpicSentinel(creature: Creature): void {
+    if (this.state.dog.command !== "distract") {
+      this.state = commandDog(this.state, "distract");
+      this.questMessage = "Bracken draws the false light's gaze without striking it.";
+      this.refreshScene();
+      return;
+    }
+
+    const encounter: Encounter = {
+      id: creature.id,
+      kind: creature.id === "ashen-spire-archon" ? "false-light-archon" : "false-light-sentinel",
+      state: creature.state === "distracted" ? "stunned" : "hostile",
+    };
+    const result = resolveEncounter(
+      this.state,
+      encounter,
+      encounter.state === "stunned" ? "staff-calm" : "staff-stun",
+    );
+    this.state = {
+      ...result.state,
+      creatures: this.state.creatures.map((entry) =>
+        entry.id === creature.id
+          ? {
+              ...entry,
+              state:
+                result.encounter.state === "restored"
+                  ? "restored"
+                  : result.encounter.state === "stunned"
+                    ? "distracted"
+                    : entry.state,
+            }
+          : entry,
+      ),
+    };
+    this.questMessage = result.message;
+
+    if (result.encounter.state === "restored") {
+      playRestore();
+      this.spawnRestoreBurst();
+    }
+
+    this.refreshScene();
   }
 
   private redrawWorld(): void {
@@ -847,7 +1162,7 @@ export class AquillaScene extends Phaser.Scene {
       graphics,
       AQUILLA_ART.sprites.aquilla,
       playerPosition.x * TILE_SIZE,
-      playerPosition.y * TILE_SIZE - 16,
+      playerPosition.y * TILE_SIZE - 16 - (this.playerMovement ? Math.sin(Date.now() / 80) * 2 : 0),
       PIXEL_SCALE,
     );
 
@@ -858,6 +1173,10 @@ export class AquillaScene extends Phaser.Scene {
       dogPosition.y * TILE_SIZE + 8,
       PIXEL_SCALE,
     );
+
+    const nowMs = Date.now();
+    this.particleBursts = pruneParticleBursts(this.particleBursts, nowMs);
+    drawParticleBursts(graphics, this.particleBursts, nowMs);
 
     this.drawHud(graphics);
   }
@@ -893,6 +1212,56 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private drawObjectiveWorldState(graphics: Phaser.GameObjects.Graphics): void {
+    if (this.state.currentArea === "fold-of-the-lost") {
+      this.drawSheep(graphics);
+      this.drawGuardian(graphics);
+      this.drawFoldRestoration(graphics);
+      this.drawThornBeast(graphics);
+      this.drawFoldEntranceStone(graphics);
+      if (this.state.currentRoom === "fold-inner") {
+        this.drawProwlers(graphics);
+      }
+      if (this.state.currentRoom === "fold-heart") {
+        this.drawShrineMarker(graphics, FOLD_HEART_SHRINE_POSITION);
+      }
+      return;
+    }
+
+    if (this.state.currentArea === "ember-fen") {
+      if (this.state.currentRoom === "ember-cistern-heart") {
+        this.drawShrineMarker(graphics, SHRINE_POSITION);
+      }
+      return;
+    }
+
+    if (this.state.currentArea === "monastic-ruins") {
+      if (this.state.currentRoom === "monastic-choir") {
+        this.drawShrineMarker(graphics, SHRINE_POSITION);
+      }
+      return;
+    }
+
+    if (this.state.currentArea === "forgotten-cathedral") {
+      if (this.state.currentRoom === "cathedral-choir") {
+        this.drawShrineMarker(graphics, SHRINE_POSITION);
+      }
+      return;
+    }
+
+    if (this.state.currentArea === "ashen-spire") {
+      if (this.state.currentRoom === "ashen-spire-apex") {
+        this.drawShrineMarker(graphics, SHRINE_POSITION, true);
+      }
+      return;
+    }
+
+    if (this.state.currentArea === "lucent-sanctum") {
+      if (this.state.currentRoom === "lucent-antechamber" || this.state.currentRoom === "lucent-throne") {
+        this.drawShrineMarker(graphics, SHRINE_POSITION, true);
+      }
+      return;
+    }
+
     if (this.state.currentArea === "old-pasture") {
       this.drawOldPastureScentTrail(graphics);
       this.drawFearEcho(graphics);
@@ -902,12 +1271,16 @@ export class AquillaScene extends Phaser.Scene {
     }
 
     if (this.state.currentArea === "lantern-ruins") {
-      this.drawCreedBeacons(graphics);
+      if (this.state.currentRoom === "lantern-beacon-hall") {
+        this.drawCreedBeacons(graphics);
+      }
       return;
     }
 
     if (this.state.currentArea === "sanctum") {
-      this.drawSanctumSteps(graphics);
+      if (this.state.currentRoom === "sanctum-witness-hall") {
+        this.drawSanctumSteps(graphics);
+      }
       return;
     }
 
@@ -920,6 +1293,17 @@ export class AquillaScene extends Phaser.Scene {
     this.drawWaterRestoration(graphics);
     this.drawGuardian(graphics);
     this.drawFoldRestoration(graphics);
+  }
+
+  private drawShrineMarker(graphics: Phaser.GameObjects.Graphics, position: Vector2, crown = false): void {
+    const x = position.x * TILE_SIZE + 6;
+    const y = position.y * TILE_SIZE + 2;
+
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+    graphics.fillRect(x + 4, y + 10, 20, 18);
+    graphics.fillStyle(hexToNumber(crown ? AQUILLA_ART.palette.trueLight : AQUILLA_ART.palette.falseLight), 0.92);
+    graphics.fillRect(x + 8, y + 2, 12, 12);
+    graphics.fillRect(x + 11, y, 6, 16);
   }
 
   private drawBriarfoldElder(graphics: Phaser.GameObjects.Graphics): void {
@@ -972,33 +1356,32 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private drawProwlers(graphics: Phaser.GameObjects.Graphics): void {
-    this.state.creatures.forEach((creature) => {
-      if (creature.kind !== "thorn-prowler") return;
+    getActiveEpicCreatures(this.state).forEach((creature) => {
+      if (
+        creature.kind !== "thorn-prowler" &&
+        creature.kind !== "false-light-sentinel" &&
+        creature.kind !== "shadow-wolf"
+      ) {
+        return;
+      }
 
-      const x = creature.position.x * TILE_SIZE + 6;
-      const y = creature.position.y * TILE_SIZE + 5;
       const restored = creature.state === "restored";
       const distracted = creature.state === "distracted";
-      const bodyColor = restored
-        ? AQUILLA_ART.palette.trueLight
-        : distracted
+      const x = creature.position.x * TILE_SIZE + 6;
+      const y = creature.position.y * TILE_SIZE + 2;
+      const bodyColor =
+        creature.kind === "false-light-sentinel"
           ? AQUILLA_ART.palette.falseLight
-          : AQUILLA_ART.palette.falseLightFringe;
+          : creature.kind === "shadow-wolf"
+            ? "#3a2f4a"
+            : AQUILLA_ART.palette.falseLightFringe;
 
       graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
-      graphics.fillRect(x + 2, y + 8, 18, 13);
-      graphics.fillRect(x + 15, y + 4, 8, 10);
-      graphics.fillRect(x + 4, y + 20, 4, 7);
-      graphics.fillRect(x + 15, y + 20, 4, 7);
-      graphics.fillStyle(hexToNumber(bodyColor), restored ? 0.88 : 0.96);
-      graphics.fillRect(x + 4, y + 9, 15, 10);
-      graphics.fillRect(x + 16, y + 6, 5, 6);
+      graphics.fillRect(x, y + 8, 20, 16);
+      graphics.fillStyle(hexToNumber(bodyColor), restored ? 0.82 : 0.95);
+      graphics.fillRect(x + 4, y + 2, 12, 14);
       graphics.fillStyle(hexToNumber(restored ? AQUILLA_ART.palette.trueLightHighlight : "#d2553f"), 1);
-      graphics.fillRect(x + 18, y + 8, 2, 2);
-      if (!restored) {
-        graphics.fillRect(x, y + 5, 6, 3);
-        graphics.fillRect(x + 8, y + 3, 4, 4);
-      }
+      graphics.fillRect(x + 7, y, distracted ? 4 : 6, distracted ? 4 : 6);
     });
   }
 
@@ -1196,6 +1579,41 @@ export class AquillaScene extends Phaser.Scene {
     graphics.fillRect(x + 13, y + 6, 2, 2);
   }
 
+  private drawThornBeast(graphics: Phaser.GameObjects.Graphics): void {
+    if (this.state.currentRoom !== "fold-entrance" || this.state.flags.foldThornBeastCalmed) {
+      return;
+    }
+
+    const x = FOLD_THORN_BEAST_POSITION.x * TILE_SIZE + 4;
+    const y = FOLD_THORN_BEAST_POSITION.y * TILE_SIZE + 2;
+    const restored = this.thornBeast.state === "restored";
+    const stunned = this.thornBeast.state === "stunned";
+
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+    graphics.fillRect(x + 2, y + 6, 20, 18);
+    graphics.fillStyle(hexToNumber(restored ? AQUILLA_ART.palette.trueLight : "#5a3a2a"), restored ? 0.82 : 0.95);
+    graphics.fillRect(x + 6, y + 2, 12, 16);
+    graphics.fillStyle(hexToNumber(stunned ? AQUILLA_ART.palette.trueLightHighlight : "#2d4a2a"), 1);
+    graphics.fillRect(x + 4, y + 8, 4, 8);
+    graphics.fillRect(x + 16, y + 8, 4, 8);
+    graphics.fillRect(x + 10, y, 4, 6);
+  }
+
+  private drawFoldEntranceStone(graphics: Phaser.GameObjects.Graphics): void {
+    if (this.state.currentRoom !== "fold-entrance" || isFoldEntranceStoneMoved(this.state)) {
+      return;
+    }
+
+    const x = FOLD_ENTRANCE_STONE_POSITION.x * TILE_SIZE + 4;
+    const y = FOLD_ENTRANCE_STONE_POSITION.y * TILE_SIZE + 6;
+
+    graphics.fillStyle(hexToNumber(AQUILLA_ART.palette.warmOutline), 1);
+    graphics.fillRect(x + 2, y + 4, 20, 14);
+    graphics.fillStyle(hexToNumber("#6a6458"), 0.95);
+    graphics.fillRect(x + 6, y, 12, 12);
+    graphics.fillRect(x + 4, y + 10, 16, 6);
+  }
+
   private drawCreedBeacons(graphics: Phaser.GameObjects.Graphics): void {
     CREED_BEACON_ORDER.forEach((beacon, index) => {
       const position = LANTERN_RUINS_BEACON_POSITIONS[beacon];
@@ -1265,21 +1683,150 @@ export class AquillaScene extends Phaser.Scene {
   }
 
   private getSceneMap(): readonly string[] {
-    return AREA_SCENE_MAPS[this.state.currentArea];
+    return getSceneMapForState(this.state);
   }
 
   private getWorldMap(): WorldMap {
-    return withShepherdGateCollision(this.state, AREA_WORLD_MAPS[this.state.currentArea]);
+    const baseMap = buildWorldMapFromScene(this.getSceneMap());
+    const withGate = withShepherdGateCollision(this.state, baseMap);
+    return withFoldStoneCollision(this.state, withGate);
   }
 
-  private openDialogue(): void {
-    this.activeDialogue = createDialogueSession(BRIARFOLD_ELDER_DIALOGUE);
-    renderDialogueHud(this.activeDialogue);
+  private interactFoldDungeon(): void {
+    const shadowWolf = this.getNearbyShadowWolf();
+    if (shadowWolf) {
+      const result = distractOrRestoreShadowWolf(this.state, shadowWolf.id);
+      this.state = result.state;
+      this.questMessage = result.message;
+      this.refreshScene();
+      return;
+    }
+
+    if (this.isNear(FOLD_THORN_BEAST_POSITION) && !this.state.flags.foldThornBeastCalmed) {
+      if (this.state.dog.command !== "distract") {
+        this.state = commandDog(this.state, "distract");
+        this.questMessage = "Bracken draws the thorn beast's rage away without biting back.";
+      } else {
+        const result = resolveEncounter(
+          this.state,
+          this.thornBeast,
+          this.thornBeast.state === "stunned" ? "staff-calm" : "staff-stun",
+        );
+        this.state = result.state;
+        this.thornBeast = result.encounter;
+        this.questMessage = result.message;
+      }
+      this.refreshScene();
+      return;
+    }
+
+    if (
+      this.isNear(FOLD_ENTRANCE_STONE_POSITION) &&
+      !isFoldEntranceStoneMoved(this.state) &&
+      this.state.currentRoom === "fold-entrance"
+    ) {
+      const result = useStaffOnObject(this.state, {
+        active: false,
+        id: "fold-entrance-stone",
+        kind: "stone",
+      });
+      this.state = result.state;
+      this.questMessage = result.message;
+      this.refreshScene();
+      return;
+    }
+
+    if (this.isNear(GUARDIAN_POSITION) && !this.state.objectives.guardianCalmed) {
+      if (this.state.dog.command !== "distract") {
+        this.state = commandDog(this.state, "distract");
+        this.questMessage = "Bracken draws the guardian's gaze without striking it.";
+      } else {
+        const result = resolveEncounter(this.state, this.guardian, "staff-calm");
+        this.state = result.state;
+        this.guardian = result.encounter;
+        this.questMessage = "The guardian remembers its charge and lowers its head.";
+      }
+      this.refreshScene();
+      return;
+    }
+
+    if (this.isNear(FOLD_HEART_SHRINE_POSITION) && this.state.currentRoom === "fold-heart") {
+      const result = completeFoldDungeon(this.state);
+      this.state = result.state;
+      this.questMessage = result.message;
+      if (result.state.objectives.foldRestored) playRestore();
+      this.refreshScene();
+      return;
+    }
+
+    const sheep = this.getNearbyLostSheep();
+    if (sheep) {
+      this.state = herdSheepById(commandDog(this.state, "herd"), sheep.id);
+      this.questMessage = "Bracken guides a lost sheep gently toward the inner fold.";
+      this.refreshScene();
+      return;
+    }
+
+    this.questMessage = "Gather the lost, calm the guardian, and restore the Fold's heart.";
+    this.refreshScene();
+  }
+
+  private maybeStartOpeningDialogue(): void {
+    if (shouldSkipIntro() || this.state.objectives.introSeen || this.activeDialogue) return;
+
+    this.openDialogue(OPENING_DIALOGUE, "opening");
+  }
+
+  private openDialogue(lines: readonly DialogueLine[], kind: DialogueKind): void {
+    this.dialogueKind = kind;
+    this.activeDialogue = createDialogueSession(lines);
+    renderDialogueHud(this.activeDialogue, this.getDialogueHint());
+  }
+
+  private getDialogueHint(): string {
+    if (this.dialogueKind === "opening") {
+      return "Press E to continue · Escape to begin playing";
+    }
+
+    if (this.dialogueKind === "finale") {
+      return "Press E to continue the homecoming";
+    }
+
+    return "Press E to continue";
   }
 
   private closeDialogue(): void {
+    const kind = this.dialogueKind;
+
+    if (kind === "opening") {
+      this.state = markIntroSeen(this.state);
+      this.questMessage = "Seek the scattered sheep, restore the spring, and make the Fold ready.";
+    }
+
+    if (kind === "finale") {
+      const result = completeStory(this.state);
+      this.state = unlockAshenMoor(result.state);
+      this.questMessage = result.message;
+      renderEndingHud(this.shouldShowEndingHud());
+    }
+
+    if (kind === "ashford") {
+      this.state = setFlag(this.state, "ashfordMet");
+      this.questMessage = "Pilgrim Elias points east toward Ember Fen.";
+    }
+
+    if (kind === "crown") {
+      const result = completeCrownWitness(this.state);
+      this.state = result.state;
+      this.questMessage = result.message;
+      playVictory();
+      renderEndingHud(this.shouldShowEndingHud());
+    }
+
     this.activeDialogue = undefined;
+    this.dialogueKind = undefined;
     renderDialogueHud();
+    this.refreshScene();
   }
 
   private persistGame(): void {
@@ -1288,12 +1835,20 @@ export class AquillaScene extends Phaser.Scene {
       guardian: this.guardian,
       questMessage: this.questMessage,
       state: this.state,
-      version: 5,
+      version: 6,
       waterChannel: this.waterChannel,
     });
   }
 
   private restoreSavedGame(): void {
+    const preset = readTestPresetFromUrl();
+    const presetState = preset ? getTestPresetState(preset) : undefined;
+
+    if (presetState) {
+      this.state = ensureEpicAreaContent(presetState);
+      return;
+    }
+
     const savedGame = loadGameSave(window.localStorage);
 
     if (!savedGame) return;
@@ -1308,6 +1863,7 @@ export class AquillaScene extends Phaser.Scene {
   private resetGame(): void {
     clearGameSave(window.localStorage);
     this.activeDialogue = undefined;
+    this.dialogueKind = undefined;
     this.playerMovement = undefined;
     this.dogMovement = undefined;
     setJournalOpen(false);
@@ -1329,6 +1885,8 @@ export class AquillaScene extends Phaser.Scene {
       active: false,
     };
     this.questMessage = INITIAL_QUEST_MESSAGE;
+    this.endingOverlaySuppressed = false;
+    renderEndingHud(false);
     this.refreshScene();
     clearGameSave(window.localStorage);
   }

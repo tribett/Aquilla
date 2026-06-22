@@ -1,13 +1,29 @@
+export type RegionId = "ashen-moor" | "briarfold-valley" | "elarion" | "high-kingsroad";
+
 export type AreaId =
+  | "ashen-spire"
+  | "ashford-crossing"
   | "briarfold"
-  | "old-pasture"
+  | "elarion-gate"
+  | "ember-fen"
+  | "fold-of-the-lost"
+  | "forgotten-cathedral"
+  | "kingsroad-pass"
   | "lantern-ruins"
-  | "sanctum"
-  | "fold-of-the-lost";
+  | "lucent-sanctum"
+  | "monastic-ruins"
+  | "old-pasture"
+  | "sanctum";
+
+export type RoomId = string;
 
 export type Direction = "up" | "down" | "left" | "right";
 
-export type InventoryItem = "grove-lantern" | "shepherd-staff";
+export type InventoryItem =
+  | "grove-lantern"
+  | "harp-of-remembrance"
+  | "lantern-of-witness"
+  | "shepherd-staff";
 
 export type DogCommand = "follow" | "stay" | "fetch" | "herd" | "distract";
 
@@ -43,7 +59,7 @@ export interface Hazard extends Actor {
   kind: "thorn-snare";
 }
 
-export type CreatureKind = "thorn-prowler";
+export type CreatureKind = "false-light-sentinel" | "shadow-wolf" | "thorn-prowler";
 
 export type CreatureState = "hostile" | "distracted" | "restored";
 
@@ -64,28 +80,35 @@ export interface Objectives {
   guardianCalmed: boolean;
   hiddenGroveFound: boolean;
   hiddenGroveLanternClaimed: boolean;
+  introSeen: boolean;
   lanternRuinsRestored: boolean;
   requiredCreedBeacons: number;
   requiredSanctumWitnessSteps: number;
   requiredSheep: number;
+  returnedHome: boolean;
   sanctumWitnessSteps: number;
   requiredThornSnares: number;
   requiredThornProwlers: number;
+  storyComplete: boolean;
   thornSnaresCleared: number;
   thornProwlersRestored: number;
   waterRestored: boolean;
 }
 
 export interface GameState {
-  region: "briarfold-valley";
+  chapter: number;
   currentArea: AreaId;
-  player: Player;
+  currentRoom: RoomId;
   creatures: Creature[];
   dog: Sheepdog;
+  flags: Record<string, boolean>;
   hazards: Hazard[];
-  sheep: Sheep[];
   inventory: InventoryItem[];
   objectives: Objectives;
+  playtimeMinutes: number;
+  player: Player;
+  region: RegionId;
+  sheep: Sheep[];
 }
 
 export interface WorldMap {
@@ -94,19 +117,24 @@ export interface WorldMap {
   blockedTiles: Vector2[];
 }
 
-export type InteractableKind = "bell" | "water-channel" | "shepherd-gate" | "stone";
+export type InteractableKind = "bell" | "stone" | "shepherd-gate" | "water-channel";
 
 export interface Interactable {
+  active: boolean;
   id: string;
   kind: InteractableKind;
-  active: boolean;
 }
 
-export type EncounterKind = "thorn-beast" | "corrupted-guardian" | "fear-echo";
+export type EncounterKind =
+  | "corrupted-guardian"
+  | "false-light-archon"
+  | "false-light-sentinel"
+  | "fear-echo"
+  | "thorn-beast";
 
-export type EncounterState = "hostile" | "stunned" | "restored";
+export type EncounterState = "hostile" | "restored" | "stunned";
 
-export type EncounterAction = "staff-stun" | "staff-calm";
+export type EncounterAction = "staff-calm" | "staff-stun";
 
 export interface Encounter {
   id: string;

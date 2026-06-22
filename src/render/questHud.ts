@@ -1,20 +1,17 @@
-import type { AreaId, InventoryItem, Objectives } from "../game/types";
+import type { InventoryItem, Objectives } from "../game/types";
 
 export interface QuestHudState {
-  currentArea: AreaId;
+  achievementLines: string[];
+  chapterTitle: string;
+  dungeonLines: string[];
   inventory: InventoryItem[];
   message: string;
   objectives: Objectives;
   prompt: string;
+  questLabel: string;
+  roomLabel: string;
+  storyBeats: string[];
 }
-
-const AREA_LABELS: Record<AreaId, string> = {
-  briarfold: "Briarfold",
-  "fold-of-the-lost": "Fold of the Lost",
-  "lantern-ruins": "Lantern Ruins",
-  "old-pasture": "Old Pasture",
-  sanctum: "Sanctum",
-};
 
 function updateText(selector: string, text: string): void {
   const element = document.querySelector<HTMLElement>(selector);
@@ -36,6 +33,8 @@ function renderObjectiveText(objectives: Objectives): void {
   const thorns = `Thorn snares ${objectives.thornSnaresCleared}/${objectives.requiredThornSnares}`;
   const prowlers = `Prowlers restored ${objectives.thornProwlersRestored}/${objectives.requiredThornProwlers}`;
   const grove = objectives.hiddenGroveFound ? "Hidden grove found" : "Hidden grove hidden";
+  const homecoming = objectives.returnedHome ? "Returned home" : "Journey outward";
+  const story = objectives.storyComplete ? "Story complete" : "Story unfolding";
 
   updateText("#objective-sheep", sheep);
   updateText("#objective-water", water);
@@ -48,6 +47,8 @@ function renderObjectiveText(objectives: Objectives): void {
   updateText("#objective-thorns", thorns);
   updateText("#objective-prowlers", prowlers);
   updateText("#objective-grove", grove);
+  updateText("#objective-homecoming", homecoming);
+  updateText("#objective-story", story);
   updateText("#journal-objective-sheep", sheep);
   updateText("#journal-objective-water", water);
   updateText("#journal-objective-guardian", guardian);
@@ -59,11 +60,15 @@ function renderObjectiveText(objectives: Objectives): void {
   updateText("#journal-objective-thorns", thorns);
   updateText("#journal-objective-prowlers", prowlers);
   updateText("#journal-objective-grove", grove);
+  updateText("#journal-objective-homecoming", homecoming);
+  updateText("#journal-objective-story", story);
 }
 
 function renderInventoryText(inventory: readonly InventoryItem[]): void {
   const labels = inventory.map((item) => {
     if (item === "grove-lantern") return "Grove Lantern";
+    if (item === "lantern-of-witness") return "Lantern of Witness";
+    if (item === "harp-of-remembrance") return "Harp of Remembrance";
     if (item === "shepherd-staff") return "Staff";
     return item;
   });
@@ -96,17 +101,51 @@ export function renderQuestHud(state: QuestHudState): void {
   const area = document.querySelector<HTMLParagraphElement>("#area-label");
   const prompt = document.querySelector<HTMLParagraphElement>("#quest-prompt");
   const message = document.querySelector<HTMLParagraphElement>("#quest-message");
+  const storyList = document.querySelector<HTMLUListElement>("#journal-story-list");
+  const dungeonList = document.querySelector<HTMLUListElement>("#journal-dungeon-list");
+  const achievementList = document.querySelector<HTMLUListElement>("#journal-achievement-list");
+  const questMessage = document.querySelector<HTMLParagraphElement>("#quest-message");
 
   if (area) {
-    area.textContent = `Area: ${AREA_LABELS[state.currentArea]}`;
+    area.textContent = `${state.chapterTitle} · ${state.roomLabel}`;
   }
 
   if (prompt) {
-    prompt.textContent = state.prompt;
+    prompt.textContent = `${state.questLabel}: ${state.prompt}`;
   }
 
-  if (message) {
-    message.textContent = state.message;
+  if (message && questMessage) {
+    questMessage.textContent = state.message;
+  }
+
+  if (storyList) {
+    storyList.replaceChildren(
+      ...state.storyBeats.map((beat) => {
+        const item = document.createElement("li");
+        item.textContent = beat;
+        return item;
+      }),
+    );
+  }
+
+  if (dungeonList) {
+    dungeonList.replaceChildren(
+      ...state.dungeonLines.map((line) => {
+        const item = document.createElement("li");
+        item.textContent = line;
+        return item;
+      }),
+    );
+  }
+
+  if (achievementList) {
+    achievementList.replaceChildren(
+      ...state.achievementLines.map((line) => {
+        const item = document.createElement("li");
+        item.textContent = line;
+        return item;
+      }),
+    );
   }
 
   renderObjectiveText(state.objectives);

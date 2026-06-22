@@ -23,7 +23,7 @@ async function expectCanvasChanged(page: Page, previous: string): Promise<string
 }
 
 test("plays the staff dog and Fold completion loop with hotkeys", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
 
   const debugState = page.locator("#debug-state");
 
@@ -51,7 +51,7 @@ test("plays the staff dog and Fold completion loop with hotkeys", async ({ page 
 });
 
 test("renders objective progress visibly on the game canvas", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
 
   let signature = await canvasSignature(page);
 

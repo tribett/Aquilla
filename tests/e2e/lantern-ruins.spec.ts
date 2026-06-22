@@ -1,15 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-
-async function pressAndSettle(page: Page, key: string): Promise<void> {
-  await page.keyboard.press(key);
-  await page.waitForTimeout(150);
-}
-
-async function followPath(page: Page, keys: string[]): Promise<void> {
-  for (const key of keys) {
-    await pressAndSettle(page, key);
-  }
-}
+import { followPath, lightCreedBeacons, pressAndSettle } from "./helpers/creedBeacons";
 
 async function enterOldPasture(page: Page): Promise<void> {
   await page.keyboard.press("H");
@@ -34,11 +24,15 @@ async function enterOldPasture(page: Page): Promise<void> {
     "ArrowRight",
     "ArrowRight",
   ]);
-  await page.keyboard.press("E");
+  await pressAndSettle(page, "E");
 }
 
 test("opens the Lantern Ruins after the fear echo and lights the creed beacons", async ({ page }) => {
-  await page.goto("/?motion=120");
+  test.setTimeout(90_000);
+
+  await page.goto("/?skipTitle=1&skipIntro=1");
+
+  await expect(page.locator("#game-root canvas")).toBeVisible();
 
   const areaLabel = page.locator("#area-label");
   const debugState = page.locator("#debug-state");
@@ -49,8 +43,8 @@ test("opens the Lantern Ruins after the fear echo and lights the creed beacons",
 
   await enterOldPasture(page);
   await followPath(page, ["ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]);
-  await page.keyboard.press("E");
-  await page.keyboard.press("E");
+  await pressAndSettle(page, "E");
+  await pressAndSettle(page, "E");
 
   await expect(debugState).toContainText("FearEcho calmed");
 
@@ -68,11 +62,10 @@ test("opens the Lantern Ruins after the fear echo and lights the creed beacons",
   ]);
   await expect(questPrompt).toContainText("find the grove lantern");
   await page.keyboard.press("E");
-  await expect(areaLabel).toContainText("Area: Old Pasture");
+  await expect(areaLabel).toContainText("Old Pasture");
   await expect(questMessage).toContainText("The Lantern Ruins wait for the grove lantern");
 
   await followPath(page, [
-    "ArrowLeft",
     "ArrowLeft",
     "ArrowLeft",
     "ArrowLeft",
@@ -114,29 +107,15 @@ test("opens the Lantern Ruins after the fear echo and lights the creed beacons",
     "ArrowRight",
   ]);
   await expect(questPrompt).toContainText("enter the Lantern Ruins");
-  await page.keyboard.press("E");
+  await pressAndSettle(page, "E");
 
-  await expect(areaLabel).toContainText("Area: Lantern Ruins");
+  await expect(areaLabel).toContainText("Lantern Ruins");
   await expect(debugState).toContainText("Area lantern-ruins");
+  await expect(debugState).toContainText("Room lantern-beacon-hall");
   await expect(creedObjective).toContainText("Creed beacons 0/3");
 
-  await followPath(page, ["ArrowRight", "ArrowRight", "ArrowRight"]);
-  await expect(questPrompt).toContainText("Maker beacon");
-  await page.keyboard.press("E");
+  await lightCreedBeacons(page);
 
-  await expect(creedObjective).toContainText("Creed beacons 1/3");
-  await expect(questMessage).toContainText("Father");
-
-  await followPath(page, ["ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]);
-  await page.keyboard.press("E");
-
-  await expect(creedObjective).toContainText("Creed beacons 2/3");
-  await expect(questMessage).toContainText("Son");
-
-  await followPath(page, ["ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]);
-  await page.keyboard.press("E");
-
-  await expect(creedObjective).toContainText("Creed beacons 3/3");
   await expect(questMessage).toContainText("Spirit");
   await expect(debugState).toContainText("Ruins restored");
 });

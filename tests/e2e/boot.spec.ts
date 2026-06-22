@@ -26,7 +26,7 @@ async function expectPlayableLayout(
   viewport: Viewport,
 ): Promise<void> {
   await page.setViewportSize(viewport);
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
 
   const canvas = page.locator("canvas");
   const questPanel = page.locator("#quest-panel");
@@ -80,16 +80,28 @@ test("loads Aquilla and renders a nonblank game canvas", async ({ page }) => {
     if (message.type() === "error") errors.push(message.text());
   });
 
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
 
   const canvas = page.locator("canvas");
   await expect(canvas).toBeVisible();
+  await page.waitForFunction(() => {
+    const canvasElement = document.querySelector("canvas");
+
+    if (!canvasElement) return false;
+
+    const context = canvasElement.getContext("2d");
+    if (!context) return false;
+
+    const pixel = context.getImageData(100, 100, 1, 1).data;
+
+    return pixel[3] > 0;
+  });
   await expect(page.getByRole("heading", { name: "Aquilla" })).toBeVisible();
   await expect(page.getByText("Gather. Guard. Restore.")).toBeVisible();
   await expect(page.getByText("Arrow keys")).toBeVisible();
   await expect(page.getByText("E interact")).toBeVisible();
   await expect(page.locator("#quest-prompt")).toContainText("Move near");
-  await expect(page.locator("#area-label")).toContainText("Area: Briarfold");
+  await expect(page.locator("#area-label")).toContainText("Briarfold");
   await expect(page.locator("#objective-sheep")).toContainText("Lost sheep 0/3");
   await expect(page.locator("#objective-water")).toContainText("Spring dry");
   await expect(page.locator("#objective-guardian")).toContainText("Guardian hostile");

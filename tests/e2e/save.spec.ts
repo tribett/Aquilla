@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("autosaves progress across reloads and resets with a new-game key", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
   await page.evaluate(() => localStorage.clear());
   await page.reload();
 

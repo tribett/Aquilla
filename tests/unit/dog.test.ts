@@ -3,6 +3,7 @@ import { createInitialState } from "../../src/game/createInitialState";
 import {
   commandDog,
   fetchNearestLostSheep,
+  getThreatWarning,
   herdNearestSheep,
   herdSheepById,
   trailDogAfterPlayerMove,
@@ -103,5 +104,11 @@ describe("dog commands", () => {
     expect(next.objectives.gatheredSheep).toBe(1);
     expect(next.sheep.find((sheep) => sheep.id === "sheep-2")?.gathered).toBe(true);
     expect(next.sheep.find((sheep) => sheep.id === "sheep-1")?.gathered).toBe(false);
+  });
+
+  it("warns when a hostile thorn prowler is nearby", () => {
+    const state = createInitialState();
+
+    expect(getThreatWarning(state)).toContain("thorn prowler");
   });
 });

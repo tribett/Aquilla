@@ -16,6 +16,8 @@ function updateText(selector: string, text: string): void {
 function renderInventoryText(inventory: readonly InventoryItem[]): string {
   const labels = inventory.map((item) => {
     if (item === "grove-lantern") return "Grove Lantern";
+    if (item === "lantern-of-witness") return "Lantern of Witness";
+    if (item === "harp-of-remembrance") return "Harp of Remembrance";
     if (item === "shepherd-staff") return "Staff";
     return item;
   });
@@ -47,7 +49,16 @@ export function renderMapHud(state: GameState): void {
   updateText("#map-next-gate", `Next gate: ${getNextMapGate(state)}`);
   updateText("#map-inventory", renderInventoryText(state.inventory));
 
-  getAreaMapEntries(state).forEach((entry) => {
-    updateText(`#map-area-${entry.id}`, `${entry.label} ${entry.status}`);
-  });
+  const list = document.querySelector<HTMLOListElement>("#area-map-list");
+
+  if (list) {
+    list.replaceChildren(
+      ...getAreaMapEntries(state).map((entry) => {
+        const item = document.createElement("li");
+        item.id = `map-area-${entry.id}`;
+        item.textContent = `${entry.label} ${entry.status}`;
+        return item;
+      }),
+    );
+  }
 }

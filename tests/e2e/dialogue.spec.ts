@@ -5,8 +5,18 @@ async function pressAndSettle(page: Page, key: string): Promise<void> {
   await page.waitForTimeout(450);
 }
 
+test("opens with Elder Mara's calling before gameplay", async ({ page }) => {
+  await page.goto("/?skipTitle=1");
+
+  const dialogue = page.locator("#dialogue-panel");
+
+  await expect(dialogue).toBeVisible();
+  await expect(dialogue.locator("#dialogue-speaker")).toContainText("Elder Mara");
+  await expect(dialogue.locator("#dialogue-text")).toContainText("scattered");
+});
+
 test("speaks with Elder Mara and pauses movement during dialogue", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
 
   const dialogue = page.locator("#dialogue-panel");
   const prompt = page.locator("#quest-prompt");
@@ -47,7 +57,7 @@ test("speaks with Elder Mara and pauses movement during dialogue", async ({ page
 });
 
 test("closes dialogue with Escape without advancing the story", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
 
   const dialogue = page.locator("#dialogue-panel");
 

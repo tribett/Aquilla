@@ -1,11 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 test("opens a journal overlay and pauses movement while it is open", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
 
   const journal = page.locator("#journal-panel");
   const debugState = page.locator("#debug-state");
 
+  await expect(page.locator("#game-root canvas")).toBeVisible();
   await expect(page.getByText("J journal")).toBeVisible();
   await expect(journal).toHaveCount(1);
   await expect(journal).toBeHidden();
@@ -17,6 +18,7 @@ test("opens a journal overlay and pauses movement while it is open", async ({ pa
   await expect(journal).toContainText("Journal");
   await expect(journal).toContainText("Lost sheep 0/3");
   await expect(journal).toContainText("Inventory: Staff");
+  await expect(journal).toContainText("Achievements");
 
   await page.keyboard.press("ArrowRight");
 
@@ -32,7 +34,7 @@ test("opens a journal overlay and pauses movement while it is open", async ({ pa
 });
 
 test("updates journal objectives from restored game state", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
 
   await page.keyboard.press("H");
   await page.keyboard.press("H");

@@ -14,7 +14,7 @@ export interface ThornRestoreResult {
 }
 
 export function getActiveHazardAt(state: GameState, position: Vector2): Hazard | undefined {
-  if (state.currentArea !== "briarfold") return undefined;
+  if (state.currentArea !== "briarfold" && state.currentArea !== "kingsroad-pass") return undefined;
 
   return state.hazards.find(
     (hazard) =>
@@ -88,6 +88,8 @@ export function restoreThornSnare(
     };
   }
 
+  const isKingsroadSnare = hazardId.startsWith("kingsroad-snare");
+
   return {
     state: {
       ...state,
@@ -96,10 +98,12 @@ export function restoreThornSnare(
           ? { ...candidate, active: false }
           : candidate,
       ),
-      objectives: {
-        ...state.objectives,
-        thornSnaresCleared: state.objectives.thornSnaresCleared + 1,
-      },
+      objectives: isKingsroadSnare
+        ? state.objectives
+        : {
+            ...state.objectives,
+            thornSnaresCleared: state.objectives.thornSnaresCleared + 1,
+          },
     },
     message: "The Shepherd's Staff loosens the thorn snare; what wounded becomes a way through.",
   };

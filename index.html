@@ -8,19 +8,21 @@
   </head>
   <body data-game="aquilla">
     <main class="page-shell" aria-labelledby="aquilla-title">
-      <section class="story-panel" aria-label="Aquilla prototype introduction">
+      <section class="story-panel" aria-label="Aquilla introduction">
         <h1 id="aquilla-title">Aquilla</h1>
         <div class="story-copy">
           <p class="tagline">Gather. Guard. Restore.</p>
           <p class="flavor">Mercy leads the lost home; grace is received, not earned.</p>
+          <p class="launch-hint">Press <strong>E</strong> when Elder Mara speaks to begin your witness.</p>
         </div>
       </section>
-      <section class="prototype-shell" aria-label="Playable prototype">
+      <section class="prototype-shell game-shell" aria-label="Playable game">
         <aside class="controls-panel" aria-label="Controls">
           <h2>Controls</h2>
           <ul class="controls-list">
             <li><span class="control-copy">Arrow keys</span><span>move Aquilla</span></li>
             <li><span class="control-copy">E interact</span><span>respond to nearby prompts</span></li>
+            <li><span class="control-copy">D distract</span><span>send Bracken to draw danger away</span></li>
             <li><span class="control-copy">F fetch</span><span>send the sheepdog ahead</span></li>
             <li><span class="control-copy">S stay</span><span>toggle sheepdog follow</span></li>
             <li><span class="control-copy">Space</span><span>same as interact</span></li>
@@ -44,6 +46,8 @@
               <li id="objective-thorns">Thorn snares 0/2</li>
               <li id="objective-prowlers">Prowlers restored 0/1</li>
               <li id="objective-grove">Hidden grove hidden</li>
+              <li id="objective-homecoming">Journey outward</li>
+              <li id="objective-story">Story unfolding</li>
               <li id="objective-inventory">Inventory: Staff</li>
             </ul>
           </div>
@@ -65,8 +69,16 @@
               <li id="journal-objective-thorns">Thorn snares 0/2</li>
               <li id="journal-objective-prowlers">Prowlers restored 0/1</li>
               <li id="journal-objective-grove">Hidden grove hidden</li>
+              <li id="journal-objective-homecoming">Journey outward</li>
+              <li id="journal-objective-story">Story unfolding</li>
               <li id="journal-objective-inventory">Inventory: Staff</li>
             </ul>
+            <h3 class="journal-subtitle">Achievements</h3>
+            <ul id="journal-achievement-list" aria-label="Achievement progress"></ul>
+            <h3 class="journal-subtitle">Eight Dungeons</h3>
+            <ul id="journal-dungeon-list" aria-label="Dungeon progress"></ul>
+            <h3 class="journal-subtitle">Story</h3>
+            <ul id="journal-story-list" aria-label="Story progress"></ul>
           </div>
         </div>
         <div id="map-panel" role="dialog" aria-modal="true" aria-labelledby="map-title" hidden>
@@ -88,6 +100,16 @@
             <p id="dialogue-speaker">Elder Mara</p>
             <p id="dialogue-text">Mercy is not weakness.</p>
             <p class="dialogue-hint">Press E to continue</p>
+          </div>
+        </div>
+        <div id="ending-panel" role="dialog" aria-modal="true" aria-labelledby="ending-title" hidden>
+          <div class="ending-card">
+            <p class="ending-eyebrow">Gather · Guard · Restore</p>
+            <h2 id="ending-title">Aquilla</h2>
+            <p class="ending-lead">The kingdom is restored. Aquilla returns home as one sent through five chapters of mercy.</p>
+            <p class="ending-copy">From Briarfold to Elarion, false light broke against received grace. The Crown Witness is complete — gather, guard, restore, wherever the Shepherd calls.</p>
+            <p class="ending-scripture">The Shepherd sends restored servants back to love what remains broken.</p>
+            <p class="ending-hint">Press N to begin again, or keep exploring Briarfold.</p>
           </div>
         </div>
       </section>

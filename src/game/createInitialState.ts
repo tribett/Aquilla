@@ -2,16 +2,18 @@ import type { GameState } from "./types";
 
 export function createInitialState(): GameState {
   return {
-    region: "briarfold-valley",
+    chapter: 1,
     currentArea: "briarfold",
+    currentRoom: "briarfold-main",
+    region: "briarfold-valley",
     player: {
-      id: "aquilla",
-      name: "Aquilla",
-      role: "shepherd-boy",
-      position: { x: 5, y: 5 },
       facing: "down",
       health: 3,
+      id: "aquilla",
       maxHealth: 3,
+      name: "Aquilla",
+      position: { x: 5, y: 5 },
+      role: "shepherd-boy",
     },
     creatures: [
       {
@@ -28,12 +30,13 @@ export function createInitialState(): GameState {
       },
     ],
     dog: {
-      id: "sheepdog",
-      name: "Sheepdog",
-      style: "border-collie",
-      position: { x: 4, y: 5 },
       command: "follow",
+      id: "bracken",
+      name: "Bracken",
+      position: { x: 4, y: 5 },
+      style: "border-collie",
     },
+    flags: {},
     hazards: [
       {
         active: true,
@@ -51,11 +54,12 @@ export function createInitialState(): GameState {
       },
     ],
     sheep: [
-      { id: "sheep-1", name: "Lost Sheep 1", position: { x: 9, y: 4 }, gathered: false },
-      { id: "sheep-2", name: "Lost Sheep 2", position: { x: 12, y: 7 }, gathered: false },
-      { id: "sheep-3", name: "Lost Sheep 3", position: { x: 9, y: 10 }, gathered: false },
+      { gathered: false, id: "sheep-1", name: "Lost Sheep 1", position: { x: 9, y: 4 } },
+      { gathered: false, id: "sheep-2", name: "Lost Sheep 2", position: { x: 12, y: 7 } },
+      { gathered: false, id: "sheep-3", name: "Lost Sheep 3", position: { x: 9, y: 10 } },
     ],
     inventory: ["shepherd-staff"],
+    playtimeMinutes: 0,
     objectives: {
       creedBeaconsLit: 0,
       fearEchoCalmed: false,
@@ -66,13 +70,16 @@ export function createInitialState(): GameState {
       guardianCalmed: false,
       hiddenGroveFound: false,
       hiddenGroveLanternClaimed: false,
+      introSeen: false,
       lanternRuinsRestored: false,
       requiredCreedBeacons: 3,
       requiredSanctumWitnessSteps: 3,
       requiredSheep: 3,
+      returnedHome: false,
       sanctumWitnessSteps: 0,
       requiredThornSnares: 2,
       requiredThornProwlers: 1,
+      storyComplete: false,
       thornSnaresCleared: 0,
       thornProwlersRestored: 0,
       waterRestored: false,

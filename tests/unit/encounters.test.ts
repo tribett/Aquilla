@@ -54,4 +54,18 @@ describe("resolveEncounter", () => {
     expect(result.state.objectives.fearEchoCalmed).toBe(true);
     expect(result.message).toBe("The fear echo releases its borrowed voice and becomes still.");
   });
+
+  it("calms a thorn-tangled beast with distraction and staff mercy", () => {
+    const thornBeast: Encounter = {
+      id: "fold-thorn-beast",
+      kind: "thorn-beast",
+      state: "hostile",
+    };
+    const state = commandDog(createInitialState(), "distract");
+
+    const result = resolveEncounter(state, thornBeast, "staff-calm");
+
+    expect(result.encounter.state).toBe("restored");
+    expect(result.state.flags.foldThornBeastCalmed).toBe(true);
+  });
 });

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("opens an area map overlay and pauses movement while it is open", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
 
   const map = page.locator("#map-panel");
   const debugState = page.locator("#debug-state");
@@ -37,7 +37,7 @@ test("opens an area map overlay and pauses movement while it is open", async ({ 
 });
 
 test("updates the area map as Aquilla opens the wider road", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
 
   await page.keyboard.press("H");
   await page.keyboard.press("H");
@@ -54,5 +54,5 @@ test("updates the area map as Aquilla opens the wider road", async ({ page }) =>
   await expect(map).toBeVisible();
   await expect(map).toContainText("Briarfold current");
   await expect(map).toContainText("Old Pasture open");
-  await expect(map).toContainText("Next gate: Enter the Old Pasture through the restored Fold.");
+  await expect(map).toContainText("Next gate: Calm the fear echo in the Old Pasture.");
 });

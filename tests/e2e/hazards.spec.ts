@@ -12,7 +12,7 @@ async function followPath(page: Page, keys: string[]): Promise<void> {
 }
 
 test("thorn snares cost resolve until Aquilla restores them with the staff", async ({ page }) => {
-  await page.goto("/?motion=120");
+  await page.goto("/?skipTitle=1&motion=120&skipIntro=1");
 
   const debugState = page.locator("#debug-state");
   const questPrompt = page.locator("#quest-prompt");

@@ -47,6 +47,7 @@ describe("game save persistence", () => {
       state: {
         ...initialState,
         currentArea: "old-pasture",
+        currentRoom: "old-pasture-main",
         objectives: {
           ...initialState.objectives,
           fearEchoCalmed: true,
@@ -60,7 +61,7 @@ describe("game save persistence", () => {
           position: { x: 6, y: 6 },
         },
       },
-      version: 5,
+      version: 6,
       waterChannel: { id: "dry-channel", kind: "water-channel", active: true },
     };
 
@@ -80,7 +81,7 @@ describe("game save persistence", () => {
       guardian: { id: "fold-guardian", kind: "corrupted-guardian", state: "hostile" },
       questMessage: "Seek the scattered sheep, restore the spring, and make the Fold ready.",
       state: createInitialState(),
-      version: 5,
+      version: 6,
       waterChannel: { id: "dry-channel", kind: "water-channel", active: false },
     });
     clearGameSave(storage);
@@ -93,7 +94,7 @@ describe("game save persistence", () => {
     const legacyState = createInitialState();
 
     storage.setItem(
-      AQUILLA_SAVE_KEY,
+      "aquilla.save.v5",
       JSON.stringify({
         fearEcho: { id: "old-pasture-fear-echo", kind: "fear-echo", state: "restored" },
         guardian: { id: "fold-guardian", kind: "corrupted-guardian", state: "restored" },
@@ -115,7 +116,10 @@ describe("game save persistence", () => {
 
     const restored = loadGameSave(storage);
 
+    expect(restored?.version).toBe(6);
     expect(restored?.state.inventory).toContain("grove-lantern");
     expect(restored?.state.objectives.hiddenGroveLanternClaimed).toBe(true);
+    expect(restored?.state.flags).toEqual({});
+    expect(restored?.state.currentRoom).toBe("old-pasture-main");
   });
 });

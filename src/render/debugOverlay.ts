@@ -21,6 +21,7 @@ export function renderDebugOverlay(state: GameState): void {
   overlay.textContent = [
     `Art Bible ${AQUILLA_ART.direction.world} - ${AQUILLA_ART.direction.tone}`,
     `Area ${state.currentArea}`,
+    `Room ${state.currentRoom}`,
     `Aquilla ${state.player.position.x},${state.player.position.y}`,
     `Resolve ${state.player.health}/${state.player.maxHealth}`,
     `Inventory ${state.inventory.join(",")}`,
@@ -34,6 +35,8 @@ export function renderDebugOverlay(state: GameState): void {
     `Creed ${state.objectives.creedBeaconsLit}/${state.objectives.requiredCreedBeacons}`,
     `Ruins ${state.objectives.lanternRuinsRestored ? "restored" : "waiting"}`,
     `Sanctum ${state.objectives.sanctumWitnessSteps}/${state.objectives.requiredSanctumWitnessSteps}`,
+    `Home ${state.objectives.returnedHome ? "returned" : "away"}`,
+    `Story ${state.objectives.storyComplete ? "complete" : "open"}`,
     `Thorns ${state.objectives.thornSnaresCleared}/${state.objectives.requiredThornSnares}`,
     `Grove ${state.objectives.hiddenGroveFound ? "found" : "hidden"}`,
     `GroveLantern ${state.objectives.hiddenGroveLanternClaimed ? "claimed" : "missing"}`,

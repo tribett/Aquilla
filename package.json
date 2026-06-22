@@ -2,23 +2,71 @@
   "name": "aquilla",
   "version": "0.1.0",
   "private": true,
+  "description": "A Christian fantasy adventure — gather, guard, restore.",
+  "author": "Aquilla",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
+    "dev": "vite --host --open",
+    "start": "vite --host --open",
     "build": "tsc -b && vite build",
+    "build:electron": "ELECTRON=true npm run build",
+    "icon": "node scripts/generate-icon.mjs",
+    "preview": "vite preview --host --open",
+    "electron:dev": "concurrently -k \"vite --host\" \"wait-on http://127.0.0.1:5173 && cross-env ELECTRON_DEV=1 electron .\"",
+    "electron:start": "npm run icon && npm run build:electron && electron .",
+    "electron:pack": "npm run icon && npm run build:electron && rm -rf release && CI=true electron-builder --dir --publish never",
+    "electron:dist": "npm run icon && npm run build:electron && CI=true electron-builder --publish never",
+    "steam:depot": "node scripts/prepare-steam-depot.mjs",
+    "steam:release": "npm run electron:dist && npm run steam:depot",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "verify": "npm run test && npm run build && npm run test:e2e"
+    "verify": "npm run test && npm run build && npm run test:e2e",
+    "verify:steam": "npm run electron:pack && (test -d release/mac-arm64/Aquilla.app || test -d release/win-unpacked)"
   },
-  "dependencies": {
-    "phaser": "^4.1.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "@types/node": "^25.9.2",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12",
+    "phaser": "^4.1.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.8",
+    "wait-on": "^9.0.3"
+  },
+  "build": {
+    "appId": "com.aquilla.game",
+    "productName": "Aquilla",
+    "asar": true,
+    "npmRebuild": false,
+    "nodeGypRebuild": false,
+    "directories": {
+      "output": "release"
+    },
+    "extraFiles": [
+      {
+        "from": "steam/steam_appid.txt",
+        "to": "steam_appid.txt"
+      }
+    ],
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.games"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }

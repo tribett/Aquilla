@@ -46,6 +46,20 @@ export function useStaffOnObject(
     };
   }
 
+  if (object.kind === "stone") {
+    return {
+      state: {
+        ...state,
+        flags: {
+          ...state.flags,
+          foldEntranceStoneMoved: true,
+        },
+      },
+      object: { ...object, active: true },
+      message: "Aquilla shifts the fallen stone with the Shepherd's Staff.",
+    };
+  }
+
   return {
     state,
     object: { ...object, active: true },

@@ -12,7 +12,7 @@ async function followPath(page: Page, keys: string[]): Promise<void> {
 }
 
 test("opens a Shepherd's Gate when the sheepdog holds the pressure plate", async ({ page }) => {
-  await page.goto("/?motion=120");
+  await page.goto("/?skipTitle=1&motion=120&skipIntro=1");
 
   const debugState = page.locator("#debug-state");
   const questPrompt = page.locator("#quest-prompt");

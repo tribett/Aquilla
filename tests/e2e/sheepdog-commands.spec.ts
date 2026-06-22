@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("sheepdog follows, stays, and fetches toward the nearest lost sheep", async ({ page }) => {
-  await page.goto("/?motion=120");
+  await page.goto("/?skipTitle=1&motion=120&skipIntro=1");
 
   const debugState = page.locator("#debug-state");
   const questMessage = page.locator("#quest-message");

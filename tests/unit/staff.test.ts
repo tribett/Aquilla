@@ -22,4 +22,13 @@ describe("useStaffOnObject", () => {
     expect(result.state.objectives.waterRestored).toBe(true);
     expect(result.object.active).toBe(true);
   });
+
+  it("moves a fallen stone blocking the Fold entrance", () => {
+    const stone: Interactable = { id: "fold-entrance-stone", kind: "stone", active: false };
+
+    const result = useStaffOnObject(createInitialState(), stone);
+
+    expect(result.state.flags.foldEntranceStoneMoved).toBe(true);
+    expect(result.message).toContain("Shepherd's Staff");
+  });
 });

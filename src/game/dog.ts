@@ -1,4 +1,55 @@
+import { getActiveShadowWolfAt } from "./shadowWolves";
+import { getActiveProwlerAt } from "./prowlers";
 import type { DogCommand, GameState, Sheep, Vector2 } from "./types";
+
+function distanceBetween(first: Vector2, second: Vector2): number {
+  return Math.hypot(first.x - second.x, first.y - second.y);
+}
+
+export function getThreatWarning(state: GameState): string | undefined {
+  const playerPosition = state.player.position;
+  const nearbyRange = 2.5;
+
+  const prowler = state.creatures.find(
+    (creature) =>
+      creature.kind === "thorn-prowler" &&
+      creature.state === "hostile" &&
+      distanceBetween(creature.position, playerPosition) <= nearbyRange,
+  );
+
+  if (prowler) {
+    return "Bracken whines low — a thorn prowler hunts nearby.";
+  }
+
+  const wolf = state.creatures.find(
+    (creature) =>
+      creature.kind === "shadow-wolf" &&
+      creature.state === "hostile" &&
+      distanceBetween(creature.position, playerPosition) <= nearbyRange,
+  );
+
+  if (wolf) {
+    return "Bracken bristles — a shadowed wolf stalks the fold.";
+  }
+
+  if (
+    state.currentArea === "fold-of-the-lost" &&
+    state.currentRoom === "fold-entrance" &&
+    !state.flags.foldThornBeastCalmed
+  ) {
+    return "Bracken growls — thorn-tangled movement blocks the outer fold.";
+  }
+
+  if (getActiveProwlerAt(state, playerPosition)) {
+    return "Bracken warns Aquilla back from the thorn prowler.";
+  }
+
+  if (getActiveShadowWolfAt(state, playerPosition)) {
+    return "Bracken warns Aquilla back from the shadowed wolf.";
+  }
+
+  return undefined;
+}
 
 export function commandDog(state: GameState, command: DogCommand): GameState {
   return {

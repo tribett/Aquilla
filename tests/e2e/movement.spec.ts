@@ -23,7 +23,7 @@ async function pressAndSettle(page: Page, key: string): Promise<void> {
 }
 
 test("moves Aquilla right with the keyboard and refreshes debug state", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
 
   await expect(page.locator("#debug-state")).toContainText("Aquilla 5,5");
 
@@ -33,7 +33,7 @@ test("moves Aquilla right with the keyboard and refreshes debug state", async ({
 });
 
 test("animates Aquilla between tiles instead of jumping instantly", async ({ page }) => {
-  await page.goto("/?motion=3000");
+  await page.goto("/?skipTitle=1&motion=3000&skipIntro=1");
 
   const start = await canvasSignature(page);
 
@@ -50,7 +50,7 @@ test("animates Aquilla between tiles instead of jumping instantly", async ({ pag
 });
 
 test("blocks Aquilla from entering water tiles in the art map", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?skipTitle=1&skipIntro=1");
 
   await pressAndSettle(page, "ArrowRight");
   await pressAndSettle(page, "ArrowRight");
