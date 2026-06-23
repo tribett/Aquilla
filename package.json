@@ -22,6 +22,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "postinstall": "playwright install chromium",
     "verify": "npm run test && npm run build && npm run test:e2e",
     "verify:steam": "npm run electron:pack && (test -d release/mac-arm64/Aquilla.app || test -d release/win-unpacked)"
   },
